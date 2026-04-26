@@ -36,19 +36,22 @@ export function useRoadmapData(user: User | null) {
     if (!user?.email) return false;
     const email = user.email.toLowerCase();
     return email.endsWith('@sajc.edu.sg') && (
-      email.startsWith('staff') || 
-      email.startsWith('teacher') || 
+      email.startsWith('staff') ||
+      email.startsWith('teacher') ||
       email.startsWith('admin') ||
       email === 'student@sajc.edu.sg' ||
       email === 'hopesave@gmail.com' ||
-      email === 'isaacng77@gmail.com'
+      email === 'isaacng77@gmail.com' ||
+      email === 'isaac@sajc.edu.sg' ||
+      email === 'isaa@sajc.edu.sg'
     );
   }, [user?.email]);
 
   const isSuperAdminUser = useMemo(() => {
     if (!user?.email) return false;
     const email = user.email.toLowerCase();
-    return email === 'hopesave@gmail.com' || email === 'isaacng77@gmail.com';
+    const superAdmins = ['hopesave@gmail.com', 'isaacng77@gmail.com', 'isaac@sajc.edu.sg', 'isaa@sajc.edu.sg'];
+    return superAdmins.includes(email);
   }, [user?.email]);
 
   const showNotification = (msg: string, type: 'success' | 'err' = 'success') => {
@@ -225,7 +228,7 @@ export function useRoadmapData(user: User | null) {
     });
 
     // 3. Admin Sync
-    let adminUnsubscribe = () => {};
+    let adminUnsubscribe = () => { };
     if (isAdminUser) {
       adminUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
         const users: any[] = [];
