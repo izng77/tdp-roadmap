@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Search, LayoutDashboard, BookOpen, Users, Bell, TrendingUp, Settings, Shield, Calendar, Star } from 'lucide-react';
 import { User, signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
@@ -176,3 +176,4 @@ export function BottomNavBar({ activeTab, setActiveTab, showAdminPanel }: any) {
     </>
   );
 }
+

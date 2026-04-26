@@ -1,7 +1,7 @@
-import React from 'react';
+﻿import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, CheckCircle2, X, BookOpen } from 'lucide-react';
+import { GripVertical, CheckCircle, X, BookOpen } from 'lucide-react';
 import { Opportunity, Profile } from '../types';
 import { cn } from '../utils';
 
@@ -60,7 +60,7 @@ export const SortablePlannedItem: React.FC<SortablePlannedItemProps> = ({ item, 
           className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 flex items-center justify-center transition-colors"
           title="Mark as completed"
         >
-          <CheckCircle2 className="w-4 h-4"/>
+          <CheckCircle className="w-4 h-4"/>
         </button>
         <button 
           onClick={() => onRemove(item.id)} 
@@ -73,3 +73,4 @@ export const SortablePlannedItem: React.FC<SortablePlannedItemProps> = ({ item, 
     </div>
   );
 };
+

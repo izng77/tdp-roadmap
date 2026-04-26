@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { doc, getDoc, updateDoc, collection, onSnapshot, query } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Opportunity } from '../types';
@@ -144,3 +144,4 @@ export function PendingUserRequests({ userDoc, catalog, showNotification, mockPe
     </>
   );
 }
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Shield, Upload, X, CheckCircle2, LayoutDashboard, BookOpen, TrendingUp, Star, Users, Clock, Image as ImageIcon, Pencil, Heart, ChevronRight, Search, Database, Bell, Plus, Flame, Calendar } from 'lucide-react';
+import { Lock, Shield, Upload, X, CheckCircle, LayoutDashboard, BookOpen, TrendingUp, Star, Users, Clock, Image as ImageIcon, Pencil, Heart, ChevronRight, Search, Database, Bell, Plus, Flame, Calendar } from 'lucide-react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -974,7 +974,7 @@ function MainApp({ user }: { user: User }) {
                           <div className="p-6 flex flex-col flex-1">
                             <div className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-2 flex justify-between items-center">
                                {item.domain}
-                               {isCompleted && <span className="flex items-center gap-1 text-emerald-600"><CheckCircle2 className="w-3 h-3"/> Done</span>}
+                               {isCompleted && <span className="flex items-center gap-1 text-emerald-600"><CheckCircle className="w-3 h-3"/> Done</span>}
                                {isPlanned && <span className="flex items-center gap-1 text-blue-500"><Clock className="w-3 h-3"/> Planned</span>}
                                {isPending && <span className="flex items-center gap-1 text-amber-500"><Clock className="w-3 h-3"/> Pending</span>}
                             </div>
@@ -1056,7 +1056,7 @@ function MainApp({ user }: { user: User }) {
                   <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-2">
                     <Star className="w-5 h-5 text-amber-500" /> Growth Profile
                   </h3>
-                  <div className="h-64 w-full">
+                  {/* <div className="h-64 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
                         <PolarGrid stroke="#E2E8F0" />
@@ -1065,6 +1065,9 @@ function MainApp({ user }: { user: User }) {
                         <Radar name="Planned" dataKey="Planned" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.2} />
                       </RadarChart>
                     </ResponsiveContainer>
+                  </div> */}
+                  <div className="h-64 w-full flex items-center justify-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <p className="text-slate-400 font-medium">Chart temporarily disabled for debugging</p>
                   </div>
                   <div className="mt-4 p-4 rounded-2xl bg-blue-50 border border-blue-100">
                     <p className="text-xs text-blue-900 leading-relaxed">
@@ -1307,7 +1310,7 @@ function MainApp({ user }: { user: User }) {
          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn">
             <div className="bg-white rounded-[3rem] w-full max-w-md p-10 text-center shadow-2xl animate-slideUp">
                <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                 <CheckCircle2 className="w-10 h-10" />
+                 <CheckCircle className="w-10 h-10" />
                </div>
                <h2 className="font-display font-black text-2xl text-slate-900 mb-2">Course Completed?</h2>
                <p className="text-slate-500 text-sm mb-8">Have you successfully finished <span className="font-bold text-slate-700">{confirmCompleteItem.name}</span>? This will move it to your completed records.</p>
@@ -1415,4 +1418,5 @@ export default function App() {
 
   return <MainApp user={user} />;
 }
+
 
