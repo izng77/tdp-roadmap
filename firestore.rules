@@ -1,0 +1,177 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Auth Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      // NOTE: Using specific emails since Google Auth won't necessarily set admin claim out of bounds easily
+      return request.auth.token.email == 'isaacng77@gmail.com' || request.auth.token.email == 'isaac@sajc.edu.sg';
+    }
+
+    function isSajcStudent() {
+      // Strict verification constraint met
+      return isSignedIn() && 
+             request.auth.token.email_verified == true && 
+             request.auth.token.email.matches('.*@sajc\\.edu\\.sg$');
+    }
+
+    function isAdmin() {
+      // Allow custom admin checks via roles or emails
+      return isSignedIn() && 
+             (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) || isSuperAdmin());
+    }
+
+    function isOwner(userId) {
+      // Must be a verified student or admin to own a doc with their exact UID
+      return (isSajcStudent() || isAdmin()) && request.auth.uid == userId;
+    }
+
+    // Core Primitives
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+
+    // Admin Access Management
+    match /admins/{adminId} {
+      // Anyone can check if a UID is an admin (or admins can list them)
+      allow get: if isOwner(adminId) || isAdmin();
+      allow list: if isAdmin();
+      
+      // We block UI-level admin modifications; manage via Firebase Console or SuperAdmin
+      allow write: if false; 
+    }
+    
+    // Global Catalog
+    match /opportunities/{opportunityId} {
+      // Data is not overly sensitive—anyone who is a student or admin can read it
+      allow get: if isSajcStudent() || isAdmin();
+      allow list: if isSajcStudent() || isAdmin();
+      
+      function isValidOpportunity(data) {
+        return data.keys().hasAll(['name', 'tier', 'domain']) &&
+               data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+               data.tier is number &&
+               data.domain is string && data.domain.size() > 0 && data.domain.size() <= 100 &&
+               
+               // Optional constrained fields
+               (!data.keys().hasAny(['ownerEmails']) || (data.ownerEmails is list && data.ownerEmails.size() <= 50 && (data.ownerEmails.size() == 0 || data.ownerEmails[0] is string))) &&
+               (!data.keys().hasAny(['description']) || (data.description is string && data.description.size() <= 5000)) &&
+               (!data.keys().hasAny(['level']) || (data.level is string && data.level.size() <= 50)) &&
+               (!data.keys().hasAny(['term']) || (data.term is string && data.term.size() <= 50)) &&
+               (!data.keys().hasAny(['week']) || (data.week is string && data.week.size() <= 50)) &&
+               (!data.keys().hasAny(['dept']) || (data.dept is string && data.dept.size() <= 100)) &&
+               (!data.keys().hasAny(['enrolled']) || (data.enrolled is number)) &&
+               (!data.keys().hasAny(['capacity']) || (data.capacity is number)) &&
+               (!data.keys().hasAny(['image']) || (data.image is string && data.image.size() <= 1000));
+      }
+      
+      allow create: if isAdmin() && isValidOpportunity(incoming()) && isValidId(opportunityId);
+      
+      // Action-based Update Pattern Guard
+      allow update: if isValidId(opportunityId) && isValidOpportunity(incoming()) && (
+                      isSuperAdmin() || 
+                      (
+                        isAdmin() && 
+                        ('ownerEmails' in existing() == false || existing().ownerEmails == null || request.auth.token.email in existing().ownerEmails) &&
+                        // Strict limitation of what standard admins/course owners can edit (no backdoor additions)
+                        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'tier', 'domain', 'description', 'level', 'term', 'week', 'dept', 'enrolled', 'capacity', 'image', 'ownerEmails'])
+                      )
+                    );
+                    
+      allow delete: if isSuperAdmin() && isValidId(opportunityId);
+    }
+    
+    // User Profiles
+    match /users/{userId} {
+      // Must be owner or admin to read
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      
+      function isValidUser(data) {
+        return data.size() >= 2 && data.size() <= 3 && 
+               data.keys().hasAll(['email', 'studentName']) &&
+               data.email is string && data.email.size() <= 200 && data.email == request.auth.token.email &&
+               (data.email.matches('.*@sajc\\.edu\\.sg$') || isAdmin()) &&
+               data.studentName is string && data.studentName.size() <= 100 && data.studentName.size() > 0;
+      }
+      
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
+      
+      // Users can only change their name
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUser(incoming()) && 
+                    incoming().email == existing().email && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['studentName']);
+                    
+      allow delete: if false;
+
+      // Student Course Tracking Subcollection
+      match /courses/{courseId} {
+        
+        function isValidCourse(data) {
+           let requiredKeys = data.keys().hasAll(['opportunityId', 'status', 'addedAt', 'name', 'tier', 'domain']);
+           let optKeysValid = data.keys().hasAll(['order']) ? (data.order is number) : true;
+           let sizeValid = data.keys().hasAll(['order']) ? (data.size() == 7) : (data.size() == 6);
+           
+           return requiredKeys && optKeysValid && sizeValid &&
+                  data.opportunityId is string && data.opportunityId.size() <= 128 &&
+                  data.status in ['planned', 'completed'] &&
+                  data.addedAt == request.time &&
+                  data.name is string && data.name.size() <= 200 && data.name.size() > 0 &&
+                  data.tier is number &&
+                  data.domain is string && data.domain.size() <= 100 && data.domain.size() > 0;
+        }
+        
+        function isValidCourseUpdate(data) {
+           let requiredKeys = data.keys().hasAll(['opportunityId', 'status', 'addedAt', 'name', 'tier', 'domain']);
+           let optKeysValid = data.keys().hasAll(['order']) ? (data.order is number) : true;
+           let sizeValid = data.keys().hasAll(['order']) ? (data.size() == 7) : (data.size() == 6);
+           
+           return requiredKeys && optKeysValid && sizeValid &&
+                  data.opportunityId is string && data.opportunityId.size() <= 128 &&
+                  data.status in ['planned', 'completed'] &&
+                  data.addedAt == existing().addedAt &&
+                  data.name is string && data.name.size() <= 200 && data.name.size() > 0 &&
+                  data.tier is number &&
+                  data.domain is string && data.domain.size() <= 100 && data.domain.size() > 0;
+        }
+
+        // Only owners or admins can see these
+        allow get: if isOwner(userId) || isAdmin();
+        allow list: if isOwner(userId) || isAdmin();
+        
+        // Atomicity and schema enforcement
+        allow create: if isOwner(userId) && isValidId(courseId) && 
+                      // Ensures they actually exist before attaching subresource:
+                      exists(/databases/$(database)/documents/users/$(userId)) && 
+                      exists(/databases/$(database)/documents/opportunities/$(incoming().opportunityId)) &&
+                      isValidCourse(incoming());
+                      
+        // Action-Based Update constraint: limit what they can touch
+        allow update: if (isOwner(userId) || isAdmin()) && isValidId(courseId) && 
+                      isValidCourseUpdate(incoming()) &&
+                      // Keep ID and timestamps locked
+                      incoming().opportunityId == existing().opportunityId &&
+                      // They can only safely update status or order (in cases where a teacher's course was renamed, the system/admin might push a sync. Using a broader hasOnly covers that, but only Admins should do full syncs)
+                      (
+                        isAdmin() ||
+                        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'order']) ||
+                        incoming().diff(existing()).affectedKeys().hasOnly(['status']) ||
+                        incoming().diff(existing()).affectedKeys().hasOnly(['order'])
+                      );
+                      
+        allow delete: if isOwner(userId) && isValidId(courseId);
+      }
+    }
+  }
+}

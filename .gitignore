@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+.npm
+.tmp/
+
+# Build
+dist/
+build/
+coverage/
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.env.local
+.env.*.local
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Firebase
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# AI Assistant Local Configs
+.gemini/
+
+# Local Data & Tooling Artifacts
+*.xlsx
+heatmap_data.json
+extracted_opportunities.json
+opportunities_catalog.json
+call_tool.json
+list_tools.json
+findings.md
+progress.md
+task_plan.md
