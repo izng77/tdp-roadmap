@@ -27,6 +27,9 @@ export function useRoadmapData(user: User | null) {
 
   const [catalog, setCatalog] = useState<Opportunity[]>([]);
   const [dbLoading, setDbLoading] = useState(true);
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState(0);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
@@ -92,7 +95,7 @@ export function useRoadmapData(user: User | null) {
   };
 
   const handleAdd = async (item: Opportunity, justification?: string) => {
-    if (!user) return;
+    if (!user) return false;
     const status = (item.tier === 3 || item.isExternal) ? 'pending' : 'planned';
     try {
       const newCourseRef = doc(collection(db, 'users', user.uid, 'courses'));
@@ -107,31 +110,37 @@ export function useRoadmapData(user: User | null) {
         justification: justification || ""
       });
       showNotification(status === 'pending' ? 'Enrollment request sent for approval!' : `Added "${item.name}" to your roadmap.`);
+      return true;
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}/courses`);
+      return false;
     }
   };
 
   const handleRemoveItem = async (docId: string) => {
-    if (!user) return;
+    if (!user) return false;
     try {
       await deleteDoc(doc(db, 'users', user.uid, 'courses', docId));
       showNotification("Item removed from your roadmap.");
+      return true;
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `users/${user.uid}/courses/${docId}`);
+      return false;
     }
   };
 
   const handleCompleteCourse = async (item: any) => {
-    if (!user) return;
+    if (!user) return false;
     try {
       await setDoc(doc(db, 'users', user.uid, 'courses', item.id), {
         status: 'completed',
         completedAt: serverTimestamp()
       }, { merge: true });
       showNotification(`Mastery achieved: ${item.name}!`);
+      return true;
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}/courses/${item.id}`);
+      return false;
     }
   };
 
@@ -157,13 +166,26 @@ export function useRoadmapData(user: User | null) {
   };
 
   const handleSeedData = async () => {
+    if (user?.uid.startsWith('mock_')) {
+      setCatalog(SEED_COURSES);
+      localStorage.setItem('mock_catalog', JSON.stringify(SEED_COURSES));
+      showNotification("Simulated: Catalog seeded locally.", "success");
+      return;
+    }
+
     const batch = writeBatch(db);
     SEED_COURSES.forEach(course => {
-      const ref = doc(collection(db, 'opportunities'));
-      batch.set(ref, course);
+      // Use the fixed ID from seedData.ts as the Firestore document ID
+      const { id, ...data } = course;
+      const ref = doc(db, 'opportunities', id);
+      batch.set(ref, data);
     });
-    await batch.commit();
-    showNotification("Catalog seeded successfully!", "success");
+    try {
+      await batch.commit();
+      showNotification("Catalog seeded successfully!", "success");
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'opportunities');
+    }
   };
 
   const handleFileUpload = async (data: any[]) => {
@@ -187,17 +209,45 @@ export function useRoadmapData(user: User | null) {
   // --- Sync Effects ---
 
   useEffect(() => {
-    if (!user) return;
+    if (catalogLoaded && profileLoaded) {
+      setDbLoading(false);
+    }
+  }, [catalogLoaded, profileLoaded]);
+
+  useEffect(() => {
+    if (!user) {
+      setDbLoading(true);
+      setCatalogLoaded(false);
+      setProfileLoaded(false);
+      return;
+    }
+
+    if (user?.uid.startsWith('mock_')) {
+      const saved = localStorage.getItem('mock_catalog');
+      if (saved) {
+        setCatalog(JSON.parse(saved));
+      } else {
+        setCatalog(SEED_COURSES); // Default if none
+      }
+      setCatalogLoaded(true);
+      return;
+    }
 
     // 1. Sync Catalog
     const catalogUnsubscribe = onSnapshot(collection(db, 'opportunities'), (snapshot) => {
       const items: Opportunity[] = [];
       snapshot.forEach(d => items.push({ id: d.id, ...d.data() } as Opportunity));
       setCatalog(items);
-      setDbLoading(false);
+      setCatalogLoaded(true);
     });
 
-    // 2. Sync Profile
+    return () => catalogUnsubscribe();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    // 2. Sync Profile Courses
     const coursesUnsubscribe = onSnapshot(query(collection(db, 'users', user.uid, 'courses'), orderBy('order', 'asc')), (snapshot) => {
       const planned: any[] = [];
       const pending: any[] = [];
@@ -214,33 +264,41 @@ export function useRoadmapData(user: User | null) {
       });
 
       setProfile(prev => ({ ...prev, planned, pending, completed, rejected }));
+      setProfileLoaded(true);
     });
 
+    // 2b. Sync Bookmark IDs
     const bookmarksUnsubscribe = onSnapshot(collection(db, 'users', user.uid, 'bookmarks'), (snapshot) => {
       const ids = snapshot.docs.map(d => d.id);
-      setProfile(prev => ({
-        ...prev,
-        bookmarks: catalog.filter(o => ids.includes(o.id))
-      }));
+      setBookmarkIds(ids);
     });
 
-    // 3. Admin Sync
-    let adminUnsubscribe = () => { };
-    if (isAdminUser) {
-      adminUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-        const users: any[] = [];
-        snapshot.forEach(d => users.push({ id: d.id, ...d.data() }));
-        setAllUsers(users);
-      });
-    }
-
     return () => {
-      catalogUnsubscribe();
       coursesUnsubscribe();
       bookmarksUnsubscribe();
-      adminUnsubscribe();
     };
-  }, [user, catalog.length, isAdminUser]);
+  }, [user]);
+
+  // 3. Link Bookmarks to Profile
+  useEffect(() => {
+    setProfile(prev => ({
+      ...prev,
+      bookmarks: catalog.filter(o => bookmarkIds.includes(o.id))
+    }));
+  }, [catalog, bookmarkIds]);
+
+  // 4. Admin Sync (Lazy load based on showAdminPanel)
+  useEffect(() => {
+    if (!user || !isAdminUser || !showAdminPanel) return;
+
+    const adminUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+      const users: any[] = [];
+      snapshot.forEach(d => users.push({ id: d.id, ...d.data() }));
+      setAllUsers(users);
+    });
+
+    return () => adminUnsubscribe();
+  }, [user, isAdminUser, showAdminPanel]);
 
   // --- Analytics & Formatting ---
 

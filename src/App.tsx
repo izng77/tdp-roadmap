@@ -95,11 +95,19 @@ function MainApp({ user }: { user: User }) {
       }, 100);
       return;
     }
-    const success = await handleAdd(item, enrollJustification);
-    if (success) {
+    
+    setIsEnrolling(true);
+    try {
+      const success = await handleAdd(item, enrollJustification);
+      if (success) {
+        setEnrollJustification('');
+        setSelectedItem(null);
+        setDirectEnrollId(null);
+      }
+    } catch (err) {
+      console.error("Enrollment Error:", err);
+    } finally {
       setIsEnrolling(false);
-      setEnrollJustification('');
-      setSelectedItem(null);
     }
   };
 
@@ -203,12 +211,6 @@ function MainApp({ user }: { user: User }) {
                     <>
                       <button
                         onClick={async () => {
-                          const isMock = user.uid.startsWith('mock_');
-                          if (isMock) {
-                            setCatalog(SEED_COURSES.map(c => ({ ...c, image: `https://image.pollinations.ai/prompt/${encodeURIComponent(c.name + ' course educational abstract')}?width=600&height=400&nologo=true` } as Opportunity)));
-                            showNotification("Simulated: Seeded default catalog locally.", "success");
-                            return;
-                          }
                           handleSeedData();
                         }}
                         className="px-6 py-3 bg-[#0151B1] hover:bg-blue-700 text-white font-label-bold text-label-bold rounded-full shadow-md transition-all uppercase tracking-wider"
@@ -1682,15 +1684,15 @@ function MainApp({ user }: { user: User }) {
                       }
                       handleEnrollClick(selectedItem);
                     }}
-                    disabled={isTierLocked(selectedItem) || profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id)}
+                    disabled={isEnrolling || isTierLocked(selectedItem) || profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id)}
                     className={cn(
                       "flex-1 py-3 rounded-full font-bold uppercase tracking-wider text-sm transition-all shadow-md active:scale-95",
-                      (isTierLocked(selectedItem) || profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id))
+                      (isEnrolling || isTierLocked(selectedItem) || profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id))
                         ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
                         : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20"
                     )}
                   >
-                    {isTierLocked(selectedItem) ? 'Locked Requirement' : profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) ? 'Already Enrolled' : profile.pending.some(p => p.id === selectedItem.id) ? 'Pending Approval' : 'Submit Enrollment Request'}
+                    {isEnrolling ? 'Submitting...' : isTierLocked(selectedItem) ? 'Locked Requirement' : profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) ? 'Already Enrolled' : profile.pending.some(p => p.id === selectedItem.id) ? 'Pending Approval' : 'Submit Enrollment Request'}
                   </button>
                 </div>
               </div>
@@ -1841,7 +1843,10 @@ function MainApp({ user }: { user: User }) {
                     Cancel
                   </button>
                   <button
-                    onClick={() => handleCompleteCourse(confirmCompleteItem)}
+                    onClick={async () => {
+                      const success = await handleCompleteCourse(confirmCompleteItem);
+                      if (success) setConfirmCompleteItem(null);
+                    }}
                     className="flex-1 py-3 rounded-full font-bold uppercase tracking-wider text-sm transition-all bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20"
                   >
                     Confirm
