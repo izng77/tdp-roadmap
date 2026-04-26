@@ -1682,15 +1682,15 @@ function MainApp({ user }: { user: User }) {
                       }
                       handleEnrollClick(selectedItem);
                     }}
-                    disabled={isTierLocked(selectedItem) || profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id) || (!enrollJustification && !isTierLocked(selectedItem))}
+                    disabled={isTierLocked(selectedItem) || profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id)}
                     className={cn(
                       "flex-1 py-3 rounded-full font-bold uppercase tracking-wider text-sm transition-all shadow-md active:scale-95",
-                      (isTierLocked(selectedItem) || profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id) || (!enrollJustification && !isTierLocked(selectedItem)))
+                      (isTierLocked(selectedItem) || profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id))
                         ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
                         : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20"
                     )}
                   >
-                    {isTierLocked(selectedItem) ? 'Locked Requirement' : profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) ? 'Already Enrolled' : profile.pending.some(p => p.id === selectedItem.id) ? 'Pending Approval' : !enrollJustification ? 'Enter Statement' : 'Submit Enrollment Request'}
+                    {isTierLocked(selectedItem) ? 'Locked Requirement' : profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) ? 'Already Enrolled' : profile.pending.some(p => p.id === selectedItem.id) ? 'Pending Approval' : 'Submit Enrollment Request'}
                   </button>
                 </div>
               </div>
