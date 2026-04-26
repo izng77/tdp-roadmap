@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A student profile",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "studentName": { "type": "string" }
+      },
+      "required": ["email", "studentName"]
+    },
+    "Opportunity": {
+      "title": "Opportunity",
+      "description": "A catalog item",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "tier": { "type": "number" },
+        "domain": { "type": "string" },
+        "description": { "type": "string" },
+        "image": { "type": "string" },
+        "dept": { "type": "string" },
+        "level": { "type": "string" },
+        "term": { "type": "string" },
+        "week": { "type": "string" },
+        "enrolled": { "type": "number" },
+        "capacity": { "type": "number" },
+        "ownerEmails": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["name", "tier", "domain"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Admin access list",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" }
+      },
+      "required": ["email"]
+    },
+    "UserCourse": {
+      "title": "UserCourse",
+      "description": "A planned or completed course for a user",
+      "type": "object",
+      "properties": {
+        "opportunityId": { "type": "string" },
+        "status": { "type": "string", "enum": ["planned", "completed"] },
+        "order": { "type": "number" },
+        "addedAt": { "type": "string", "format": "date-time" },
+        "name": { "type": "string" },
+        "tier": { "type": "number" },
+        "domain": { "type": "string" }
+      },
+      "required": ["opportunityId", "status", "addedAt", "name", "tier", "domain"]
+    }
+  },
+  "firestore": {
+    "/opportunities/{opportunityId}": {
+      "schema": { "$ref": "#/entities/Opportunity" },
+      "description": "Catalog of opportunities managed by admins"
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/Admin" },
+      "description": "List of authorized administrator UIDs"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Student profiles"
+    },
+    "/users/{userId}/courses/{courseId}": {
+      "schema": { "$ref": "#/entities/UserCourse" },
+      "description": "Courses taken by the student"
+    }
+  }
+}
