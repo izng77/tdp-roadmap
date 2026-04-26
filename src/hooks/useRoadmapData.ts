@@ -42,15 +42,14 @@ export function useRoadmapData(user: User | null) {
       email === 'student@sajc.edu.sg' ||
       email === 'hopesave@gmail.com' ||
       email === 'isaacng77@gmail.com' ||
-      email === 'isaac@sajc.edu.sg' ||
-      email === 'isaa@sajc.edu.sg'
+      email === 'isaac@sajc.edu.sg'
     );
   }, [user?.email]);
 
   const isSuperAdminUser = useMemo(() => {
     if (!user?.email) return false;
     const email = user.email.toLowerCase();
-    const superAdmins = ['hopesave@gmail.com', 'isaacng77@gmail.com', 'isaac@sajc.edu.sg', 'isaa@sajc.edu.sg'];
+    const superAdmins = ['hopesave@gmail.com', 'isaacng77@gmail.com', 'isaac@sajc.edu.sg'];
     return superAdmins.includes(email);
   }, [user?.email]);
 
