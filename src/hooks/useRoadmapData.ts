@@ -33,13 +33,16 @@ export function useRoadmapData(user: User | null) {
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'err' } | null>(null);
 
   const isAdminUser = useMemo(() => {
-    if (!user?.email) return false;
-    const email = user.email.toLowerCase();
-    const isStaffEmail = email.includes('staff@sajc.edu.sg');
-    return isStaffEmail || 
-      email === 'isaacng77@gmail.com' || 
-      email === 'isaac@sajc.edu.sg';
-  }, [user?.email]);
+    if (!user) return false;
+    const email = user.email?.toLowerCase() || "";
+    const name = user.displayName?.toUpperCase() || "";
+    
+    // Super Admins are always Admins
+    if (email === 'isaacng77@gmail.com' || email === 'isaac@sajc.edu.sg') return true;
+    
+    // Staff rule: Name ends with " STAFF" and has @sajc.edu.sg email
+    return name.endsWith(' STAFF') && email.endsWith('@sajc.edu.sg');
+  }, [user]);
 
   const isSuperAdminUser = useMemo(() => {
     if (!user?.email) return false;
