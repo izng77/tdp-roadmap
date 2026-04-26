@@ -1,10 +1,3 @@
 {
-  "projectId": "gen-lang-client-0998228004",
-  "appId": "1:605235749865:web:87418ae9e847abad11a178",
-  "apiKey": "AIzaSyCv46rvi-hRsoelRcM9kV4g-d6o46PZtrk",
-  "authDomain": "gen-lang-client-0998228004.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-ae5a332e-a3e0-45fa-ad0e-8a9242f08d25",
-  "storageBucket": "gen-lang-client-0998228004.firebasestorage.app",
-  "messagingSenderId": "605235749865",
-  "measurementId": ""
+  "notice": "This file has been deprecated for security reasons. Configuration is now managed via environment variables."
 }
