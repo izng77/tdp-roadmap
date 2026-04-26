@@ -252,21 +252,25 @@ export function useRoadmapData(user: User | null) {
     profile.planned.forEach(p => {
       dist[p.domain] = (dist[p.domain] || 0) + 0.5;
     });
-    return dist;
+    
+    const entries = Object.entries(dist);
+    const topDomains = entries.sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const max = Math.max(...entries.map(e => e[1]), 1);
+    
+    return { dist, topDomains, max };
   }, [profile.completed, profile.planned]);
 
   const chartData = useMemo(() => {
     const domains = Array.from(new Set(catalog.map(o => o.domain))).filter(Boolean);
     return domains.map(d => ({
       subject: d,
-      A: domainDistribution[d] || 0,
+      A: domainDistribution.dist[d] || 0,
       fullMark: 5
     }));
   }, [catalog, domainDistribution]);
 
   const topDomain = useMemo(() => {
-    const sorted = Object.entries(domainDistribution).sort((a, b) => b[1] - a[1]);
-    return sorted.length > 0 ? sorted[0][0] : "Exploration";
+    return domainDistribution.topDomains.length > 0 ? domainDistribution.topDomains[0][0] : "Exploration";
   }, [domainDistribution]);
 
   return {
