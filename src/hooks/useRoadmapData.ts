@@ -35,13 +35,10 @@ export function useRoadmapData(user: User | null) {
   const isAdminUser = useMemo(() => {
     if (!user?.email) return false;
     const email = user.email.toLowerCase();
-    return email.endsWith('@sajc.edu.sg') && (
-      email.startsWith('staff') ||
-      email.startsWith('teacher') ||
-      email.startsWith('admin') ||
-      email === 'isaacng77@gmail.com' ||
-      email === 'isaac@sajc.edu.sg'
-    );
+    const isStaffEmail = email.includes('staff@sajc.edu.sg');
+    return isStaffEmail || 
+      email === 'isaacng77@gmail.com' || 
+      email === 'isaac@sajc.edu.sg';
   }, [user?.email]);
 
   const isSuperAdminUser = useMemo(() => {
