@@ -29,6 +29,7 @@ desktop.ini
 firebase-debug.log*
 firestore-debug.log*
 ui-debug.log*
+firebase-applet-config.json
 
 # Environment Variables
 .env
