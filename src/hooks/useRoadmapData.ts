@@ -39,8 +39,6 @@ export function useRoadmapData(user: User | null) {
       email.startsWith('staff') ||
       email.startsWith('teacher') ||
       email.startsWith('admin') ||
-      email === 'student@sajc.edu.sg' ||
-      email === 'hopesave@gmail.com' ||
       email === 'isaacng77@gmail.com' ||
       email === 'isaac@sajc.edu.sg'
     );
@@ -49,7 +47,7 @@ export function useRoadmapData(user: User | null) {
   const isSuperAdminUser = useMemo(() => {
     if (!user?.email) return false;
     const email = user.email.toLowerCase();
-    const superAdmins = ['hopesave@gmail.com', 'isaacng77@gmail.com', 'isaac@sajc.edu.sg'];
+    const superAdmins = ['isaacng77@gmail.com', 'isaac@sajc.edu.sg'];
     return superAdmins.includes(email);
   }, [user?.email]);
 
