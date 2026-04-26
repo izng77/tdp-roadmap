@@ -1,783 +1,803 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Search, 
-  LayoutDashboard, 
-  BookOpen, 
-  Users, 
-  Bell, 
-  TrendingUp, 
-  Settings, 
-  Shield, 
-  Calendar, 
-  Star, 
-  Clock, 
-  CheckCircle2, 
-  X, 
-  ChevronRight, 
-  Heart, 
-  Upload, 
-  Lock,
-  ShieldCheck,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  Image as ImageIcon
-} from 'lucide-react';
-import { 
-  User, 
-  onAuthStateChanged, 
-  signInWithPopup, 
-  signOut, 
-  serverTimestamp 
-} from 'firebase/auth';
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  writeBatch 
-} from 'firebase/firestore';
-import { 
-  Radar, 
-  RadarChart, 
-  PolarGrid, 
-  PolarAngleAxis, 
-  PolarRadiusAxis, 
-  ResponsiveContainer 
-} from 'recharts';
-import { 
-  DndContext, 
-  closestCenter, 
-  KeyboardSensor, 
-  PointerSensor, 
-  useSensor, 
-  useSensors 
-} from '@dnd-kit/core';
-import { 
-  arrayMove, 
-  SortableContext, 
-  sortableKeyboardCoordinates, 
-  verticalListSortingStrategy 
-} from '@dnd-kit/sortable';
+import React, { useState, useEffect } from 'react';
+import { Lock, Shield, Upload, X, ShieldCheck, CheckCircle2, LayoutDashboard, BookOpen, TrendingUp, Star, Users, Clock, Image as ImageIcon, Pencil, Heart, ChevronRight, Search, Database, Bell, Plus, Flame, Calendar } from 'lucide-react';
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { auth, googleProvider, db, handleFirestoreError, OperationType } from './lib/firebase';
+import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { doc, updateDoc, deleteDoc, getDoc, getDocs, collection, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 
-import { auth, db, googleProvider, handleFirestoreError, OperationType } from './lib/firebase';
-import { useRoadmapData } from './hooks/useRoadmapData';
 import { Opportunity, Profile } from './types';
-import { cn, getTierName } from './utils';
-
-import { TopNavBar, SideNavBar, BottomNavBar, DesktopTopBar } from './components/Navigation';
-import { PendingUserRequests } from './components/PendingUserRequests';
+import { SEED_COURSES } from './seedData';
+import { cn, categorizeDomain, getTierName } from './utils';
 import { SortablePlannedItem } from './components/SortablePlannedItem';
+import { DesktopTopBar, TopNavBar, SideNavBar, BottomNavBar } from './components/Navigation';
+import { PendingUserRequests } from './components/PendingUserRequests';
+import { useRoadmapData } from './hooks/useRoadmapData';
+
+
 
 function MainApp({ user }: { user: User }) {
-  const { profile, setProfile, catalog, setCatalog, isAdminUser, allUsers } = useRoadmapData(user);
-  const [activeTab, setActiveTab] = useState(0);
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
-  const [search, setSearch] = useState('');
-  const [selectedItem, setSelectedItem] = useState<Opportunity | null>(null);
-  const [toast, setToast] = useState<{msg: string, type: 'success' | 'err'} | null>(null);
-  const [domainFilters, setDomainFilters] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
-  const [levelFilter, setLevelFilter] = useState('all');
-  const [termFilter, setTermFilter] = useState('all');
-  const [weekFilter, setWeekFilter] = useState('all');
-  const [tierFilter, setTierFilter] = useState('all');
-  const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
-  const [confirmCompleteItem, setConfirmCompleteItem] = useState<Opportunity | null>(null);
-  const [directEnrollId, setDirectEnrollId] = useState<string | null>(null);
-  const [enrollJustification, setEnrollJustification] = useState('');
+  // Core data from hook
+  const {
+    profile, setProfile, dbLoading, catalog, setCatalog,
+    isAdminUser, isSuperAdminUser, showAdminPanel, setShowAdminPanel,
+    users, activeTab, setActiveTab, toast,
+    showNotification, handleToggleBookmark, handleSeedData, handleFileUpload,
+    handleCompleteCourse, handleAdd, handleDragEnd, handleRemoveItem,
+    isTierLocked, getLockReason, getUnlockSuggestions,
+    domainDistribution, filterOptions, chartData, topDomain,
+  } = useRoadmapData(user);
+
+  // Local UI state
   const [focusMode, setFocusMode] = useState(false);
-  
-  // Teacher Console States
-  const [teacherSearch, setTeacherSearch] = useState('');
+  const [showExternalModal, setShowExternalModal] = useState(false);
+  const [enrollJustification, setEnrollJustification] = useState('');
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  const [externalForm, setExternalForm] = useState({ name: '', domain: '', tier: 1, justification: '' });
+  const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
+  const [directEnrollId, setDirectEnrollId] = useState<string | null>(null);
+  const [editingImageId, setEditingImageId] = useState<string | null>(null);
+  const [editedImageUrl, setEditedImageUrl] = useState<string>("");
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [editingCourseData, setEditingCourseData] = useState<Partial<Opportunity> | null>(null);
-  const [editingImageId, setEditingImageId] = useState<string | null>(null);
-  const [editedImageUrl, setEditedImageUrl] = useState('');
-  const [showExternalModal, setShowExternalModal] = useState(false);
-  const [externalForm, setExternalForm] = useState({ name: '', domain: '', tier: 1, justification: '' });
-  const [showSaintsImport, setShowSaintsImport] = useState(false);
-  const [saintsPortalText, setSaintsPortalText] = useState('');
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+  const [catalogFilterLevel, setCatalogFilterLevel] = useState<'all' | 'mine'>('all');
+  const [search, setSearch] = useState("");
+  const [tierFilter, setTierFilter] = useState<string>("all");
+  const [levelFilter, setLevelFilter] = useState<string>("all");
+  const [termFilter, setTermFilter] = useState<string>("all");
+  const [weekFilter, setWeekFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
+  const [domainFilters, setDomainFilters] = useState<string[]>([]);
+  const [selectedItem, setSelectedItem] = useState<Opportunity | null>(null);
+  const [syncSummary, setSyncSummary] = useState<{ count: number; items: Opportunity[] } | null>(null);
+  const [confirmCompleteItem, setConfirmCompleteItem] = useState<Opportunity | null>(null);
+  const [saintsPortalText, setSaintsPortalText] = useState("");
   const [saintsPortalParsed, setSaintsPortalParsed] = useState<Opportunity[] | null>(null);
+  const [showSaintsImport, setShowSaintsImport] = useState(false);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const showNotification = (msg: string, type: 'success' | 'err') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const isTierLocked = (item: Opportunity) => {
-    if (item.tier === 1) return false;
-    const hasLowerTierInDomain = profile.completed.some(c => c.domain === item.domain && c.tier < item.tier) || 
-                                profile.planned.some(p => p.domain === item.domain && p.tier < item.tier);
-    return !hasLowerTierInDomain;
-  };
-
-  const getLockReason = (item: Opportunity) => {
-    if (item.tier === 1) return "";
-    return `Requires a Tier ${item.tier - 1} or lower course in ${item.domain}`;
-  };
-
-  const getUnlockSuggestions = (item: Opportunity) => {
-    return catalog.filter(c => c.domain === item.domain && c.tier < item.tier).slice(0, 2);
-  };
-
-  const filteredCatalog = useMemo(() => {
+  const filteredCatalog = React.useMemo(() => {
     return catalog.filter(item => {
-      const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) || 
-                           item.domain.toLowerCase().includes(search.toLowerCase());
-      const matchesDomain = domainFilters.length === 0 || domainFilters.includes(item.domain.toLowerCase());
-      const matchesLevel = levelFilter === 'all' || item.level === levelFilter;
-      const matchesTerm = termFilter === 'all' || item.term === termFilter;
-      const matchesWeek = weekFilter === 'all' || item.week === weekFilter;
-      const matchesTier = tierFilter === 'all' || item.tier === Number(tierFilter);
-      const matchesBookmark = !showBookmarksOnly || profile.bookmarks.some(b => b.id === item.id);
-      const isVisible = !item.isUnlisted || isAdminUser;
-      
-      return matchesSearch && matchesDomain && matchesLevel && matchesTerm && matchesWeek && matchesTier && matchesBookmark && isVisible;
+      const matchSearch = item.name.toLowerCase().includes(search.toLowerCase());
+      const matchTier = tierFilter === "all" || item.tier.toString() === tierFilter;
+      const matchLevel = levelFilter === "all" || item.level === levelFilter;
+      const matchTerm = termFilter === "all" || item.term === termFilter;
+      const matchWeek = weekFilter === "all" || item.week === weekFilter;
+      const matchDomain = domainFilters.length === 0 || domainFilters.includes((item.domain || "").trim().toLowerCase());
+      const matchBookmark = !showBookmarksOnly || profile.bookmarks.some(b => b.id === item.id);
+      return matchSearch && matchTier && matchLevel && matchTerm && matchWeek && matchDomain && matchBookmark;
     });
-  }, [catalog, search, domainFilters, levelFilter, termFilter, weekFilter, tierFilter, showBookmarksOnly, profile.bookmarks, isAdminUser]);
-
-  const chartData = useMemo(() => {
-    const domains = Array.from(new Set(catalog.map(item => item.domain)));
-    return domains.map(domain => {
-      const completedCount = profile.completed.filter(c => c.domain === domain).length;
-      const plannedCount = profile.planned.filter(p => p.domain === domain).length;
-      return {
-        subject: domain,
-        Completed: completedCount * 5 + 2, // Base scale for visualization
-        Planned: (completedCount + plannedCount) * 5 + 2,
-        fullMark: 20
-      };
-    });
-  }, [catalog, profile.completed, profile.planned]);
-
-  const topDomain = useMemo(() => {
-    if (chartData.length === 0) return null;
-    return [...chartData].sort((a, b) => b.Completed - a.Completed)[0];
-  }, [chartData]);
-
-  const filterOptions = useMemo(() => {
-    return {
-      levels: Array.from(new Set(catalog.map(i => i.level).filter(Boolean))) as string[],
-      terms: Array.from(new Set(catalog.map(i => i.term).filter(Boolean))) as string[],
-      weeks: Array.from(new Set(catalog.map(i => i.week).filter(Boolean))) as string[]
-    };
-  }, [catalog]);
-
-  const handleEnrollClick = async (item: Opportunity) => {
-    if (isTierLocked(item)) {
-      showNotification(getLockReason(item), 'err');
-      return;
-    }
-
-    if (profile.planned.some(p => p.id === item.id)) {
-      showNotification('Already in your schedule', 'success');
-      return;
-    }
-
-    if (profile.pending.some(p => p.id === item.id)) {
-      showNotification('Enrollment request is pending approval', 'success');
-      return;
-    }
-
-    if (directEnrollId !== item.id) {
-      setDirectEnrollId(item.id);
-      setSelectedItem(item);
-      setEnrollJustification('');
-      return;
-    }
-
-    if (!enrollJustification.trim()) {
-      showNotification('Please provide a statement of interest.', 'err');
-      return;
-    }
-
-    try {
-      const isMock = user.uid.startsWith('mock_');
-      if (!isMock) {
-        const newCourseRef = doc(collection(db, 'users', user.uid, 'courses'));
-        await setDoc(newCourseRef, {
-          opportunityId: item.id,
-          status: 'pending',
-          order: profile.planned.length + profile.pending.length,
-          addedAt: serverTimestamp(),
-          justification: enrollJustification.trim(),
-          name: item.name,
-          tier: item.tier,
-          domain: item.domain
-        });
-      } else {
-        // Simulated add for mock user
-        const mockPending = { ...item, status: 'pending', justification: enrollJustification };
-        setProfile(prev => ({
-          ...prev,
-          pending: [...prev.pending, mockPending as Opportunity]
-        }));
-      }
-      
-      showNotification(`Request sent for ${item.name}!`, 'success');
-      setSelectedItem(null);
-      setDirectEnrollId(null);
-      setEnrollJustification('');
-    } catch (e) {
-      console.error("Enroll Error:", e);
-      handleFirestoreError(e, OperationType.CREATE, `users/${user.uid}/courses`);
-    }
-  };
-
-  const handleToggleBookmark = async (item: Opportunity) => {
-    const isBookmarked = profile.bookmarks.some(b => b.id === item.id);
-    try {
-      const isMock = user.uid.startsWith('mock_');
-      if (!isMock) {
-        const bookmarkRef = doc(db, 'users', user.uid, 'bookmarks', item.id);
-        if (isBookmarked) {
-          await deleteDoc(bookmarkRef);
-        } else {
-          await setDoc(bookmarkRef, {
-            id: item.id,
-            addedAt: serverTimestamp()
-          });
-        }
-      } else {
-        // Simulated toggle for mock user
-        setProfile(prev => ({
-          ...prev,
-          bookmarks: isBookmarked 
-            ? prev.bookmarks.filter(b => b.id !== item.id)
-            : [...prev.bookmarks, item]
-        }));
-      }
-      showNotification(isBookmarked ? 'Removed from bookmarks' : 'Added to bookmarks', 'success');
-    } catch (e) {
-      handleFirestoreError(e, isBookmarked ? OperationType.DELETE : OperationType.CREATE, `users/${user.uid}/bookmarks/${item.id}`);
-    }
-  };
-
-  const handleRemoveItem = async (id: string) => {
-    try {
-      const isMock = user.uid.startsWith('mock_');
-      const itemToRemove = profile.planned.find(p => p.id === id) || profile.pending.find(p => p.id === id) || profile.rejected.find(r => r.id === id);
-      
-      if (!isMock) {
-        // In real Firestore, we need the doc ID. useRoadmapData should've mapped these.
-        // Assuming the ID stored in planned/pending/rejected is the Firestore document ID
-        await deleteDoc(doc(db, 'users', user.uid, 'courses', id));
-        
-        // If it was a planned item, decrement enrolled count
-        if (profile.planned.some(p => p.id === id)) {
-           const oppId = itemToRemove?.courseId || itemToRemove?.id;
-           if (oppId) {
-             const oppRef = doc(db, 'opportunities', oppId);
-             // We'd need to fetch or use a transaction here, but for prototype:
-             // updateDoc(oppRef, { enrolled: increment(-1) });
-           }
-        }
-      } else {
-        // Simulated remove for mock user
-        setProfile(prev => ({
-          ...prev,
-          planned: prev.planned.filter(p => p.id !== id),
-          pending: prev.pending.filter(p => p.id !== id),
-          rejected: prev.rejected.filter(p => p.id !== id)
-        }));
-      }
-      showNotification('Activity removed', 'success');
-    } catch (e) {
-      handleFirestoreError(e, OperationType.DELETE, `users/${user.uid}/courses/${id}`);
-    }
-  };
-
-  const handleCompleteCourse = async (item: Opportunity) => {
-    try {
-      const isMock = user.uid.startsWith('mock_');
-      if (!isMock) {
-        await updateDoc(doc(db, 'users', user.uid, 'courses', item.id), {
-          status: 'completed',
-          completedAt: serverTimestamp()
-        });
-      } else {
-        // Simulated complete for mock user
-        setProfile(prev => ({
-          ...prev,
-          planned: prev.planned.filter(p => p.id !== item.id),
-          completed: [...prev.completed, { ...item, status: 'completed' } as Opportunity]
-        }));
-      }
-      setConfirmCompleteItem(null);
-      showNotification(`Congratulations on completing ${item.name}!`, 'success');
-    } catch (e) {
-      handleFirestoreError(e, OperationType.UPDATE, `users/${user.uid}/courses/${item.id}`);
-    }
-  };
-
-  const handleDragEnd = async (event: any) => {
-    const { active, over } = event;
-    if (active.id !== over.id) {
-      const oldIndex = profile.planned.findIndex(p => p.id === active.id);
-      const newIndex = profile.planned.findIndex(p => p.id === over.id);
-      const newPlanned = arrayMove(profile.planned, oldIndex, newIndex);
-      
-      setProfile(prev => ({ ...prev, planned: newPlanned }));
-      
-      // Sync to Firestore
-      try {
-        const isMock = user.uid.startsWith('mock_');
-        if (!isMock) {
-          const batch = writeBatch(db);
-          newPlanned.forEach((item, idx) => {
-            batch.update(doc(db, 'users', user.uid, 'courses', item.id), { order: idx });
-          });
-          await batch.commit();
-        }
-      } catch (e) {
-        handleFirestoreError(e, OperationType.UPDATE, `users/${user.uid}/courses`);
-      }
-    }
-  };
+  }, [catalog, search, tierFilter, levelFilter, termFilter, weekFilter, domainFilters, showBookmarksOnly, profile.bookmarks]);
 
   const autoParseSaintsPortalData = () => {
-    const lines = saintsPortalText.split('\n').map(l => l.trim()).filter(l => l.length > 2);
-    if (lines.length === 0) return;
-
-    const detected: Opportunity[] = lines.map(line => {
-      const lower = line.toLowerCase();
-      let domain = "Cognitive & Academic";
+    const lines = saintsPortalText.split('\n').map(l => l.trim()).filter(l => l.length > 4);
+    const results: Opportunity[] = [];
+    lines.forEach((line, i) => {
+      const domain = categorizeDomain(line);
+      const lowerLine = line.toLowerCase();
       let tier = 1;
-
-      if (lower.includes('olympiad') || lower.includes('competition') || lower.includes('prize') || lower.includes('award') || lower.includes('h3')) tier = 3;
-      else if (lower.includes('council') || lower.includes('exco') || lower.includes('leader') || lower.includes('captain') || lower.includes('president') || lower.includes('secretary')) tier = 2;
-
-      if (lower.includes('math') || lower.includes('science') || lower.includes('computing') || lower.includes('ict') || lower.includes('stem') || lower.includes('robotics')) domain = "STEM & Innovation";
-      else if (lower.includes('art') || lower.includes('music') || lower.includes('theatre') || lower.includes('dance') || lower.includes('choir') || lower.includes('band')) domain = "Aesthetics & Culture";
-      else if (lower.includes('council') || lower.includes('service') || lower.includes('volunteer') || lower.includes('community') || lower.includes('via')) domain = "Leadership & Service";
-      else if (lower.includes('sport') || lower.includes('basketball') || lower.includes('football') || lower.includes('track') || lower.includes('badminton')) domain = "Physical & Sports";
-      
-      return {
-        id: `portal_${Math.random().toString(36).substr(2, 9)}`,
-        name: line,
-        domain,
-        tier,
-        description: "Imported from Saints Portal",
-        level: "JC1 & JC2"
-      } as Opportunity;
+      if (lowerLine.includes('captain') || lowerLine.includes('director') || lowerLine.includes('chairperson') || lowerLine.includes('president') || lowerLine.includes('finalist') || lowerLine.includes('award') || lowerLine.includes('silver') || lowerLine.includes('gold') || lowerLine.includes('national') || lowerLine.includes('international') || lowerLine.includes('research') || lowerLine.includes('publication')) { tier = 3; }
+      else if (lowerLine.includes('committee') || lowerLine.includes('lead') || lowerLine.includes('organis') || lowerLine.includes('represent') || lowerLine.includes('competition') || lowerLine.includes('member') || lowerLine.includes('workshop') || lowerLine.includes('training') || lowerLine.includes('seminar') || lowerLine.includes('project')) { tier = 2; }
+      results.push({ id: `saints_import_${i}_${Date.now()}`, name: line.length > 80 ? line.substring(0, 80) + '...' : line, tier, domain });
     });
-
-    setSaintsPortalParsed(detected);
-    showNotification(`Detected ${detected.length} activities. Review them below.`, 'success');
+    setSaintsPortalParsed(results.slice(0, 20));
   };
+
+  const handleEnrollClick = async (item: Opportunity) => {
+    if (!enrollJustification.trim()) {
+      showNotification("A Statement of Interest is required to enroll.", "err");
+      setDirectEnrollId(item.id);
+      setSelectedItem(item);
+      setTimeout(() => {
+        const textarea = document.querySelector('textarea');
+        if (textarea) textarea.focus();
+      }, 100);
+      return;
+    }
+    const success = await handleAdd(item, enrollJustification);
+    if (success) {
+       setIsEnrolling(false);
+       setEnrollJustification('');
+       setSelectedItem(null);
+    }
+  };
+
+  const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+
+
+  if (dbLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center font-body-sm text-on-background">
+        <div className="w-8 h-8 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin mb-4"></div>
+        <div className="font-label-bold text-label-bold text-on-surface-variant">Loading your profile...</div>
+      </div>
+    );
+  }
+
+
 
   if (showAdminPanel && isAdminUser) {
     return (
-      <div className="flex flex-col min-h-screen bg-[#F1F5F9] font-body-sm text-slate-900 selection:bg-blue-100">
-        <TopNavBar profile={profile} activeTab={activeTab} setActiveTab={setActiveTab} isAdminUser={isAdminUser} showAdminPanel={showAdminPanel} setShowAdminPanel={setShowAdminPanel} />
+      <div className="flex flex-col min-h-screen bg-background font-body-sm text-on-background selection:bg-blue-100">
+        <TopNavBar user={user} profile={profile} activeTab={activeTab} setActiveTab={setActiveTab} isAdminUser={isAdminUser} showAdminPanel={showAdminPanel} setShowAdminPanel={setShowAdminPanel} />
         <SideNavBar profile={profile} activeTab={activeTab} setActiveTab={setActiveTab} isAdminUser={isAdminUser} showAdminPanel={showAdminPanel} setShowAdminPanel={setShowAdminPanel} />
         
-        <main className="flex-1 md:ml-[88px] flex flex-col min-w-0 pb-32">
-          <div className="w-full h-20 bg-white border-b border-slate-200 flex items-center px-10 sticky top-0 z-30">
-             <div className="flex-1">
-               <h1 className="font-display font-extrabold text-2xl text-[#1A365D] tracking-tight">Teacher Console</h1>
-             </div>
-             <div className="flex items-center gap-4">
-                <div className="bg-emerald-50 text-emerald-700 px-4 py-1.5 rounded-full text-xs font-bold border border-emerald-100">Authenticated: {user.email}</div>
-             </div>
-          </div>
-
-          <div className="max-w-[1400px] w-full mx-auto p-10">
-            {/* Overview Stats */}
-            <div className={cn("grid grid-cols-1 md:grid-cols-4 gap-6 mb-10", activeTab !== 0 && "hidden")}>
-               {[
-                 { label: 'Total Students', value: allUsers.length, icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
-                 { label: 'Active Requests', value: allUsers.reduce((acc, u) => acc + (u.pending?.length || 0), 0), icon: Bell, color: 'text-amber-600', bg: 'bg-amber-100' },
-                 { label: 'Courses Offered', value: catalog.length, icon: BookOpen, color: 'text-purple-600', bg: 'bg-purple-100' },
-                 { label: 'Avg Mastery Pts', value: Math.round(allUsers.reduce((acc, u) => acc + (u.totalTierPoints || 0), 0) / (allUsers.length || 1)), icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-100' }
-               ].map((stat, i) => (
-                 <div key={i} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-5">
-                    <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shrink-0", stat.bg, stat.color)}>
-                      <stat.icon className="w-7 h-7" />
-                    </div>
-                    <div>
-                      <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</div>
-                      <div className="text-3xl font-display font-bold text-slate-900">{stat.value}</div>
-                    </div>
-                 </div>
-               ))}
+        <main className="flex-1 md:ml-[88px] md:mr-[88px] flex flex-col min-w-0 bg-[#F8FAFC]/50 pb-32 min-h-screen transition-all duration-300">
+          <DesktopTopBar profile={profile} focusMode={focusMode} setFocusMode={setFocusMode} />
+          
+          <div className="w-full max-w-[1200px] mx-auto px-margin-mobile md:px-0 py-stack-lg md:py-section-gap">
+            <div className="mb-8 flex items-center justify-between">
+              <div>
+                <h1 className="font-display-xl text-display-xl text-primary">Teacher Console</h1>
+                <p className="font-body-lg text-body-lg text-on-surface-variant mt-stack-sm text-slate-500">Manage students, catalog, and view analytics.</p>
+              </div>
+              <button onClick={() => setShowAdminPanel(false)} className="px-6 py-2 bg-blue-100/50 text-[#0151B1] font-label-bold text-label-bold rounded-full hover:bg-blue-100 transition-colors uppercase tracking-wider shadow-sm flex items-center gap-2">
+                <LayoutDashboard className="w-4 h-4" /> Switch to Student View
+              </button>
             </div>
 
-            {/* Content Area */}
-            <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
-               {/* Tab 0: Admin Overview / Student List */}
-               <div className={cn(activeTab === 0 ? "block" : "hidden")}>
-                  <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                    <h2 className="font-display font-bold text-xl text-[#1A365D]">Student Progress Tracking</h2>
-                    <div className="relative w-72">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <input 
-                        type="text" 
-                        placeholder="Search students..." 
-                        value={teacherSearch}
-                        onChange={e => setTeacherSearch(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-full py-2.5 pl-11 pr-4 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                      />
-                    </div>
+            {/* Overview Tab */}
+            <div className={cn("flex-col gap-6", activeTab === 0 ? "flex animate-fadeIn" : "hidden")}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-blue-50 text-[#0151B1] flex items-center justify-center shrink-0">
+                    <Users className="w-6 h-6" />
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                          <th className="py-5 px-8">Student Name</th>
-                          <th className="py-5 px-4 text-center">T1</th>
-                          <th className="py-5 px-4 text-center">T2</th>
-                          <th className="py-5 px-4 text-center">T3</th>
-                          <th className="py-5 px-4 text-center">Total Pts</th>
-                          <th className="py-5 px-8 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {allUsers.filter(u => u.studentName?.toLowerCase().includes(teacherSearch.toLowerCase())).map((student) => (
-                          <tr key={student.id} className="hover:bg-slate-50 transition-colors group">
-                            <td className="py-5 px-8">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-sm">
-                                  {student.studentName?.charAt(0)}
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="font-bold text-slate-900">{student.studentName}</span>
-                                  <span className="text-xs text-slate-500">{student.email}</span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-5 px-4 text-center font-bold text-slate-700">{student.tier1Count || 0}</td>
-                            <td className="py-5 px-4 text-center font-bold text-slate-700">{student.tier2Count || 0}</td>
-                            <td className="py-5 px-4 text-center font-bold text-slate-700">{student.tier3Count || 0}</td>
-                            <td className="py-5 px-4 text-center">
-                              <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-100">
-                                {student.totalTierPoints || 0}
-                              </span>
-                            </td>
-                            <td className="py-5 px-8 text-right">
-                              <button className="text-slate-400 hover:text-blue-600 p-2 transition-colors">
-                                <ChevronRight className="w-5 h-5" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div>
+                    <h3 className="font-bold text-slate-500 text-sm uppercase tracking-wider">Total Students</h3>
+                    <p className="font-display text-3xl font-extrabold text-slate-900 mt-1">{users.length}</p>
                   </div>
-               </div>
-
-               {/* Tab 1: Catalog Management */}
-               <div className={cn(activeTab === 1 ? "block" : "hidden")}>
-                  <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                    <h2 className="font-display font-bold text-xl text-[#1A365D]">Catalog Management</h2>
-                    <div className="flex gap-4">
-                      <div className="relative w-72">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input 
-                          type="text" 
-                          placeholder="Search courses..." 
-                          value={search}
-                          onChange={e => setSearch(e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-full py-2.5 pl-11 pr-4 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                        />
+                </div>
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-500 text-sm uppercase tracking-wider">Active Courses</h3>
+                    <p className="font-display text-3xl font-extrabold text-slate-900 mt-1">{catalog.length}</p>
+                  </div>
+                </div>
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                    <TrendingUp className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-500 text-sm uppercase tracking-wider">Engagement Rate</h3>
+                    <p className="font-display text-3xl font-extrabold text-slate-900 mt-1">78%</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                <h3 className="font-display font-bold text-xl text-slate-900 mb-6">Recent Activity Notifications</h3>
+                <div className="space-y-4">
+                  {[
+                    "New cohort of 150 students onboarded for 2026 Academic Year.",
+                    "Course 'Design Thinking Workshop' (Tier 1) updated by admin.",
+                    "Student progression rate reached new milestone in Science Domain.",
+                    "System weekly automated backup completed smoothly."
+                  ].map((act, i) => (
+                    <div key={i} className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                      <Bell className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-slate-700 font-medium">{act}</p>
+                        <p className="text-xs text-slate-400 mt-1">{i * 2 + 1} hours ago</p>
                       </div>
-                      <button 
-                        onClick={() => {
-                          const newId = `course_${Date.now()}`;
-                          const newCourse = {
-                            id: newId,
-                            name: 'New Course Template',
-                            domain: 'Cognitive & Academic',
-                            tier: 1,
-                            description: 'Add course description here...',
-                            level: 'JC1 & JC2',
-                            enrolled: 0,
-                            capacity: 20
-                          };
-                          setEditingCourseId(newId);
-                          setEditingCourseData(newCourse);
-                        }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-full text-sm font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        Add Course
-                      </button>
                     </div>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                          <th className="py-5 px-8 w-1/3">Course Title</th>
-                          <th className="py-5 px-4 text-center">Tier</th>
-                          <th className="py-5 px-4">Domain</th>
-                          <th className="py-5 px-4 text-center">Enrollment</th>
-                          <th className="py-5 px-8 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {filteredCatalog.map((item) => (
-                          <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
-                            <td className="py-5 px-8">
-                              <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-slate-100 rounded-xl overflow-hidden shrink-0 relative group/img">
-                                  {item.image ? (
-                                    <img src={item.image} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                      <ImageIcon className="w-6 h-6" />
-                                    </div>
-                                  )}
-                                  <button onClick={() => { setEditingImageId(item.id); setEditedImageUrl(item.image || ''); }} className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity">
-                                    <Edit className="w-4 h-4" />
-                                  </button>
-                                </div>
-                                <div className="flex flex-col min-w-0">
-                                  <span className="font-bold text-slate-900 truncate">{item.name}</span>
-                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{item.level}</span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-5 px-4 text-center">
-                              <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider", item.tier === 1 ? "bg-emerald-100 text-emerald-700" : item.tier === 2 ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700")}>
-                                {getTierName(item.tier)}
-                              </span>
-                            </td>
-                            <td className="py-5 px-4">
-                              <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">
-                                {item.domain}
-                              </span>
-                            </td>
-                            <td className="py-5 px-4 text-center">
-                              <div className="flex flex-col items-center gap-1">
-                                <span className="font-bold text-slate-900">{item.enrolled || 0}/{item.capacity || 20}</span>
-                                <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                  <div className="h-full bg-blue-500" style={{ width: `${Math.min(100, ((item.enrolled || 0) / (item.capacity || 20)) * 100)}%` }} />
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-5 px-8 text-right">
-                               <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button 
-                                    onClick={() => { setEditingCourseId(item.id); setEditingCourseData({ ...item }); }}
-                                    className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
-                                  >
-                                    <Edit className="w-5 h-5" />
-                                  </button>
-                                  <button 
-                                    onClick={async () => {
-                                      if (confirm(`Are you sure you want to delete ${item.name}?`)) {
-                                        try {
-                                          const isMock = user.uid.startsWith('mock_');
-                                          if (!isMock) { await deleteDoc(doc(db, 'opportunities', item.id)); }
-                                          else { setCatalog(catalog.filter(o => o.id !== item.id)); }
-                                          showNotification('Course deleted successfully', 'success');
-                                        } catch (e) { handleFirestoreError(e, OperationType.DELETE, `opportunities/${item.id}`); }
-                                      }
-                                    }}
-                                    className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                                  >
-                                    <Trash2 className="w-5 h-5" />
-                                  </button>
-                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-               </div>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-               {/* Tab 3: Requests Panel */}
-               <div className={cn(activeTab === 3 ? "block" : "hidden")}>
-                  <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                    <h2 className="font-display font-bold text-xl text-[#1A365D]">Enrollment Requests</h2>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                          <th className="py-5 px-8">Student</th>
-                          <th className="py-5 px-4">Learning Opportunity</th>
-                          <th className="py-5 px-8 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {allUsers.map((studentUser) => (
-                          <PendingUserRequests 
-                            key={studentUser.id} 
-                            userDoc={studentUser} 
-                            catalog={catalog} 
-                            showNotification={showNotification}
-                            mockPending={studentUser.pending}
-                            mockProcessed={studentUser.processed}
-                            onMockAction={(courseId, action) => {
-                              // If it's the mock user, we update their local state
-                              if (studentUser.id === 'mock_student_123') {
-                                const target = [...(studentUser.pending || []), ...(studentUser.processed || [])].find(c => c.id === courseId);
-                                if (!target) return;
-                                
-                                setProfile(prev => {
-                                  const pending = [...prev.pending];
-                                  const planned = [...prev.planned];
-                                  const rejected = [...prev.rejected];
+            {/* Catalog Management Tab */}
+            <div className={cn(activeTab === 1 ? "block animate-fadeIn" : "hidden")}>
+              <div className="bg-white rounded-[2rem] p-8 shadow-[0_4px_30px_rgba(59,130,246,0.03)] border border-slate-200">
+                 <h2 className="font-headline-lg text-headline-lg font-display font-bold text-slate-900 mb-4">Catalog Management</h2>
+                 <p className="font-body-lg text-body-lg text-slate-500 mb-6">
+                   Upload a JSON/CSV file exported from Google Sheets, or manually seed the database with the default values.
+                 </p>
+                 
+                 <div className="flex flex-wrap gap-4">
+                    {isSuperAdminUser && (
+                      <>
+                        <button 
+                          onClick={async () => {
+                             const isMock = user.uid.startsWith('mock_');
+                             if (isMock) {
+                               setCatalog(SEED_COURSES.map(c => ({ ...c, image: `https://image.pollinations.ai/prompt/${encodeURIComponent(c.name + ' course educational abstract')}?width=600&height=400&nologo=true` } as Opportunity)));
+                               showNotification("Simulated: Seeded default catalog locally.", "success");
+                               return;
+                             }
+                             handleSeedData();
+                           }}
+                          className="px-6 py-3 bg-[#0151B1] hover:bg-blue-700 text-white font-label-bold text-label-bold rounded-full shadow-md transition-all uppercase tracking-wider"
+                        >
+                          Seed Default Catalog Data
+                        </button>
+                        
+                        <button 
+                          onClick={async () => {
+                             try {
+                               const isMock = user.uid.startsWith('mock_');
+                               let b = !isMock ? writeBatch(db) : null;
+                               let count = 0;
+                               const newCatalog = catalog.map(item => ({
+                                 ...item,
+                                 domain: categorizeDomain(item.name)
+                               }));
+
+                               if (!isMock && b) {
+                                 for (const item of catalog) {
+                                   b.update(doc(db, 'opportunities', item.id), {
+                                     domain: categorizeDomain(item.name)
+                                   });
+                                   count++;
+                                   if (count === 400) { await b.commit(); b = writeBatch(db); count = 0; }
+                                 }
+                                 if (count > 0) await b.commit();
+                                } else {
+                                 setCatalog(newCatalog);
+                               }
+                               
+                               showNotification(isMock ? 'Simulated: Re-mapped all domains locally' : 'Re-mapped all domains successfully', 'success');
+                             } catch (e) {
+                               handleFirestoreError(e, OperationType.UPDATE, 'opportunities');
+                             }
+                           }}
+                          className="px-6 py-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-label-bold text-label-bold rounded-full shadow-sm transition-all uppercase tracking-wider"
+                        >
+                          Auto-Categorize Domains
+                        </button>
+
+                        <button 
+                          onClick={async () => {
+                            try {
+                              showNotification("Recalculating enrollments from user data...", "success");
+                              const usersSnapshot = await getDocs(collection(db, 'users'));
+                              const courseCounts: Record<string, number> = {};
+                              
+                              for (const userDoc of usersSnapshot.docs) {
+                                const coursesSnap = await getDocs(collection(db, 'users', userDoc.id, 'courses'));
+                                coursesSnap.forEach(c => {
+                                  if (c.data().status === 'planned' || c.data().status === 'completed') {
+                                    const oppId = c.data().opportunityId;
+                                    courseCounts[oppId] = (courseCounts[oppId] || 0) + 1;
+                                  }
+                                });
+                              }
+                              
+                              let b = writeBatch(db);
+                              let count = 0;
+                              for (const item of catalog) {
+                                b.update(doc(db, 'opportunities', item.id), {
+                                  enrolled: courseCounts[item.id] || 0
+                                });
+                                count++;
+                                if (count === 400) { await b.commit(); b = writeBatch(db); count = 0; }
+                              }
+                              if (count > 0) await b.commit();
+                              showNotification('Enrollments recalculated successfully based on actual user data.', 'success');
+                            } catch (e) {
+                              handleFirestoreError(e, OperationType.UPDATE, 'opportunities');
+                            }
+                          }}
+                          className="px-6 py-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-label-bold text-label-bold rounded-full shadow-sm transition-all uppercase tracking-wider"
+                        >
+                          Sync Actual Enrollments
+                        </button>
+
+                        <button 
+                          onClick={async () => {
+                            try {
+                              const isMock = user.uid.startsWith('mock_');
+                              let b = !isMock ? writeBatch(db) : null;
+                              let count = 0;
+                              const newCatalog = [...catalog];
+
+                              for (let i = 0; i < newCatalog.length; i++) {
+                                const item = newCatalog[i];
+                                if (!item.image || item.image.includes('dicebear.com') || item.image.includes('loremflickr.com') || item.image.includes('placeholder')) {
+                                  const newUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(item.name + ' course educational abstract')}?width=600&height=400&nologo=true`;
                                   
-                                  if (action === 'approve') {
-                                    const pIdx = pending.findIndex(p => p.id === courseId);
-                                    if (pIdx > -1) {
-                                      const item = pending.splice(pIdx, 1)[0];
-                                      planned.push({ ...item, status: 'planned' });
-                                    }
-                                  } else if (action === 'reject') {
-                                    const pIdx = pending.findIndex(p => p.id === courseId);
-                                    if (pIdx > -1) {
-                                      const item = pending.splice(pIdx, 1)[0];
-                                      rejected.push({ ...item, status: 'rejected' });
-                                    }
-                                  } else if (action === 'undo') {
-                                    const plIdx = planned.findIndex(p => p.id === courseId);
-                                    if (plIdx > -1) {
-                                      const item = planned.splice(plIdx, 1)[0];
-                                      pending.push({ ...item, status: 'pending' });
-                                    } else {
-                                      const rIdx = rejected.findIndex(r => r.id === courseId);
-                                      if (rIdx > -1) {
-                                        const item = rejected.splice(rIdx, 1)[0];
-                                        pending.push({ ...item, status: 'pending' });
-                                      }
-                                    }
+                                  if (b) {
+                                    b.update(doc(db, 'opportunities', item.id), { image: newUrl });
                                   }
                                   
-                                  return { ...prev, pending, planned, rejected };
-                                });
+                                  newCatalog[i] = { ...item, image: newUrl };
+                                  count++;
+                                  
+                                  if (b && count === 400) { 
+                                    await b.commit(); 
+                                    b = writeBatch(db); 
+                                    count = 0; 
+                                  }
+                                }
+                              }
+
+                              if (b && count > 0) {
+                                await b.commit();
+                              }
+
+                              if (isMock) {
+                                setCatalog(newCatalog);
+                                localStorage.setItem('mock_catalog', JSON.stringify(newCatalog));
+                                showNotification(`Simulated: Generated thumbnails for ${count} items locally.`, 'success');
+                              } else {
+                                showNotification(`Successfully generated thumbnails for ${count} items in database.`, 'success');
+                              }
+                            } catch (e) {
+                              console.error("Thumbnail Generation Error:", e);
+                              handleFirestoreError(e, OperationType.UPDATE, 'opportunities');
+                            }
+                          }}
+                          className="px-6 py-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-label-bold text-label-bold rounded-full shadow-sm transition-all uppercase tracking-wider flex items-center gap-2"
+                        >
+                          <ImageIcon className="w-4 h-4" /> Auto-Generate Thumbnails
+                        </button>
+                      </>
+                    )}
+
+                    {isSuperAdminUser && (
+                       <label className="flex items-center justify-center px-6 py-3 border-2 border-dashed border-[#0151B1]/30 rounded-full cursor-pointer hover:border-[#0151B1] hover:bg-blue-50 transition-colors group">
+                         <input type="file" className="hidden" accept=".json,.csv,.xlsx,.xls" onChange={handleFileUpload} />
+                         <Upload className="w-5 h-5 mr-2 text-[#0151B1] transition-colors" />
+                         <span className="font-label-bold text-label-bold text-[#0151B1] uppercase tracking-wider">Import from CSV / JSON / XLSX</span>
+                       </label>
+                    )}
+                    <button
+                      onClick={() => {
+                        setEditingCourseId('new-' + Date.now().toString());
+                        setEditingCourseData({ name: '', domain: '', tier: 1, enrolled: 0, capacity: 20 });
+                      }}
+                      className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-label-bold text-label-bold rounded-full shadow-md transition-all uppercase tracking-wider flex items-center justify-center gap-2"
+                    >
+                      <Plus className="w-5 h-5"/> Add New Course
+                    </button>
+                 </div>
+                 
+                 <div className="mt-8 border-t border-slate-200 pt-8">
+                   <div className="flex justify-between items-end mb-4">
+                     <h3 className="font-headline-md text-headline-md font-bold text-slate-900">Live Catalog Overview</h3>
+                     <div className="flex bg-slate-100 p-1 rounded-full">
+                       <button
+                         onClick={() => setCatalogFilterLevel('all')}
+                         className={cn("px-4 py-1.5 text-sm font-label-bold text-label-bold rounded-full transition-all", catalogFilterLevel === 'all' ? "bg-white text-[#0151B1] shadow-sm" : "text-slate-500 hover:text-slate-700")}
+                       >
+                         All Courses
+                       </button>
+                       <button
+                         onClick={() => setCatalogFilterLevel('mine')}
+                         className={cn("px-4 py-1.5 text-sm font-label-bold text-label-bold rounded-full transition-all", catalogFilterLevel === 'mine' ? "bg-white text-[#0151B1] shadow-sm" : "text-slate-500 hover:text-slate-700")}
+                       >
+                         Assigned to Me
+                       </button>
+                     </div>
+                   </div>
+                   <div className="h-[500px] overflow-y-auto bg-slate-50 rounded-xl border border-slate-200 p-4 shadow-inner custom-scrollbar">
+                      {catalog.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                          <Database className="w-8 h-8 mb-2 opacity-50" />
+                          <p className="font-body-sm text-body-sm">Catalog is empty. Please seed or import data.</p>
+                        </div>
+                      ) : (
+                        <ul className="space-y-2">
+                          {catalog.filter(item => catalogFilterLevel === 'all' || (item.ownerEmails?.includes(user?.email || ''))).map(item => (
+                            <li key={item.id} className="p-3 bg-white border border-slate-200 rounded-lg flex justify-between shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:border-blue-200 transition-colors items-center">
+                              <div className="flex items-center gap-3">
+                                <div className="relative group/thumbnail shrink-0 cursor-pointer">
+                                  {item.image ? (
+                                    <>
+                                      <img src={item.image} alt="" className="w-8 h-8 rounded object-cover border border-slate-200" />
+                                      <div className="absolute z-50 left-10 top-1/2 -translate-y-1/2 hidden group-hover/thumbnail:block w-48 h-48 bg-white border border-slate-200 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] overflow-hidden pointer-events-none">
+                                        <img src={item.image} alt="" className="w-full h-full object-cover" />
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center border border-slate-200">
+                                      <ImageIcon className="w-4 h-4 text-slate-400" />
+                                    </div>
+                                  )}
+                                </div>
+                                <span className="font-body-lg text-body-lg font-semibold text-slate-800">{item.name}</span>
+                              </div>
+                              <div className="flex gap-2 items-center mt-1 flex-wrap">
+                                <span className={cn("px-2 py-1 text-xs rounded-full font-label-bold text-label-bold", item.tier === 1 ? "bg-emerald-100 text-emerald-800" : item.tier === 2 ? "bg-blue-100 text-blue-800" : "bg-red-100 text-red-800")}>{getTierName(item.tier)}</span>
+                                <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full font-label-bold text-label-bold uppercase tracking-wider border border-slate-200">{item.domain}</span>
+                                <span className="px-2 py-1 bg-purple-50 text-purple-600 text-xs rounded-full font-label-bold text-label-bold tracking-wider border border-purple-100">
+                                  {item.enrolled || 0} Enrolled (Max {item.capacity || 20})
+                                </span>
+                                {item.level && <span className="px-2 py-1 bg-white text-slate-500 text-[10px] rounded border border-slate-200">{item.level}</span>}
+                                {item.term && <span className="px-2 py-1 bg-white text-slate-500 text-[10px] rounded border border-slate-200">{item.term}{item.week ? `, Wk ${item.week}` : ''}</span>}
+                                
+                                {(isSuperAdminUser || (user?.email && item.ownerEmails?.includes(user?.email))) && (
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        setEditingCourseId(item.id);
+                                        setEditingCourseData({
+                                          ...item,
+                                          description: item.description || 'Master core concepts and practical applications.'
+                                        });
+                                      }}
+                                      className="p-1 hover:bg-slate-100 text-slate-400 hover:text-[#0151B1] rounded-md transition-colors ml-2"
+                                      title="Edit Details"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setEditingImageId(item.id);
+                                        setEditedImageUrl(item.image || "");
+                                      }}
+                                      className="p-1 hover:bg-slate-100 text-slate-400 hover:text-[#0151B1] rounded-md transition-colors"
+                                      title="Edit Thumbnail"
+                                    >
+                                      <ImageIcon className="w-4 h-4" />
+                                    </button>
+                                    {isSuperAdminUser && (
+                                      <button
+                                        onClick={async () => {
+                                          try {
+                                            const isMock = user.uid.startsWith('mock_');
+                                            if (!isMock) {
+                                              await deleteDoc(doc(db, 'opportunities', item.id));
+                                            } else {
+                                              // Simulated delete
+                                              setCatalog(catalog.filter(o => o.id !== item.id));
+                                            }
+                                            showNotification('Removed successfully', 'success');
+                                          } catch (e) {
+                                            handleFirestoreError(e, OperationType.DELETE, 'opportunities');
+                                          }
+                                        }}
+                                        className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-md transition-colors ml-1"
+                                        title="Delete Item"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                   </div>
+                 </div>
+              </div>
+            </div>
+            
+            {/* Students Tab */}
+            <div className={cn("flex flex-col animate-fadeIn", activeTab === 2 ? "flex" : "hidden")}>
+                <div className="bg-white rounded-[2rem] p-8 shadow-[0_4px_30px_rgba(59,130,246,0.03)] border border-slate-200">
+                  <h2 className="font-headline-lg text-headline-lg font-display font-bold text-slate-900 mb-4">Student Directory</h2>
+                  <p className="font-body-lg text-body-lg text-slate-500 mb-6">Manage student profiles and view overall progress records.</p>
+                  
+                  <div className="h-[500px] overflow-y-auto w-full custom-scrollbar">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200">
+                          <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Student Name</th>
+                          <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Email</th>
+                          <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {users.map(u => (
+                          <tr key={u.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                            <td className="py-4 px-4 font-bold text-slate-900 flex items-center gap-3">
+                              <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">
+                                {(u.studentName || 'S').substring(0, 2).toUpperCase()}
+                              </div>
+                              {u.studentName || 'Unknown Student'}
+                            </td>
+                            <td className="py-4 px-4 text-slate-500 hidden md:table-cell">{u.email}</td>
+                            <td className="py-4 px-4 text-right">
+                              <button onClick={() => showNotification('View Profile feature coming soon', 'success')} className="text-blue-600 hover:text-blue-800 font-bold text-sm">View Profile</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+            </div>
+
+            {/* Requests Tab */}
+            <div className={cn("flex flex-col animate-fadeIn", activeTab === 3 ? "flex" : "hidden")}>
+                <div className="bg-white rounded-[2rem] p-8 shadow-[0_4px_30px_rgba(59,130,246,0.03)] border border-slate-200">
+                  <h2 className="font-headline-lg text-headline-lg font-display font-bold text-slate-900 mb-4">Enrollment Requests</h2>
+                  <p className="font-body-lg text-body-lg text-slate-500 mb-6">Manage pending student enrollments.</p>
+                  
+                  <div className="h-[500px] overflow-y-auto w-full custom-scrollbar">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200">
+                          <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Student Name</th>
+                          <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Course</th>
+                          <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {users.map(u => (
+                          <PendingUserRequests 
+                            key={u.id} 
+                            userDoc={u} 
+                            catalog={catalog} 
+                            showNotification={showNotification} 
+                            mockPending={u.id === user.uid && user.uid.startsWith('mock_') ? profile.pending : undefined}
+                            mockProcessed={u.id === user.uid && user.uid.startsWith('mock_') ? [...profile.planned, ...profile.rejected] : undefined}
+                            onMockAction={(courseId, action) => {
+                              if (action === 'approve') {
+                                const course = profile.pending.find(p => p.courseId === courseId || p.id === courseId);
+                                if (course) {
+                                  setProfile(p => ({
+                                    ...p,
+                                    pending: p.pending.filter(x => x.courseId !== courseId && x.id !== courseId),
+                                    planned: [...p.planned, {...course, status: 'planned'}]
+                                  }));
+                                }
+                              } else if (action === 'reject') {
+                                const course = profile.pending.find(p => p.courseId === courseId || p.id === courseId);
+                                if (course) {
+                                  setProfile(p => ({
+                                    ...p,
+                                    pending: p.pending.filter(x => x.courseId !== courseId && x.id !== courseId),
+                                    rejected: [...p.rejected, {...course, status: 'rejected'}]
+                                  }));
+                                }
+                              } else if (action === 'undo') {
+                                const plannedCourse = profile.planned.find(p => p.courseId === courseId || p.id === courseId);
+                                const rejectedCourse = profile.rejected.find(p => p.courseId === courseId || p.id === courseId);
+                                const course = plannedCourse || rejectedCourse;
+                                if (course) {
+                                  setProfile(p => ({
+                                    ...p,
+                                    planned: p.planned.filter(x => x.courseId !== courseId && x.id !== courseId),
+                                    rejected: p.rejected.filter(x => x.courseId !== courseId && x.id !== courseId),
+                                    pending: [...p.pending, {...course, status: 'pending'}]
+                                  }));
+                                }
                               }
                             }}
                           />
                         ))}
-                        {allUsers.every(u => (u.pending?.length || 0) === 0 && (u.processed?.length || 0) === 0) && (
-                          <tr>
-                            <td colSpan={3} className="py-20 text-center text-slate-400 font-medium italic">No active or recently processed requests.</td>
-                          </tr>
-                        )}
                       </tbody>
                     </table>
                   </div>
-               </div>
+                </div>
             </div>
-          </div>
 
-          {/* Edit Course Modal */}
+            {/* Analytics Tab */}
+            <div className={cn("flex flex-col animate-fadeIn", activeTab === 4 ? "flex" : "hidden")}>
+                <div className="bg-white rounded-[2rem] p-8 shadow-[0_4px_30px_rgba(59,130,246,0.03)] border border-slate-200">
+                  <h2 className="font-headline-lg text-headline-lg font-display font-bold text-slate-900 mb-4">School Analytics</h2>
+                  <p className="font-body-lg text-body-lg text-slate-500 mb-6">Current performance metrics of the entire cohort.</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 h-64 flex flex-col items-center justify-center">
+                      <div className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Domain Distribution</div>
+                      <div className="w-full flex items-end justify-around h-32 px-4 gap-2">
+                        {domainDistribution.topDomains.map(([domain, count], i) => {
+                          const colors = ['bg-blue-400', 'bg-emerald-400', 'bg-purple-400', 'bg-amber-400', 'bg-rose-400'];
+                          const textColors = ['text-blue-900', 'text-emerald-900', 'text-purple-900', 'text-amber-900', 'text-rose-900'];
+                          return (
+                            <div key={domain} className="flex flex-col items-center justify-end h-full flex-1">
+                              <div className={`w-full max-w-[48px] rounded-t-md flex justify-center text-xs font-bold pt-2 ${colors[i % colors.length]} ${textColors[i % colors.length]}`} style={{ height: `${(count / domainDistribution.max) * 100}%`, minHeight: '20px' }}>
+                                {count}
+                              </div>
+                              <div className="text-[10px] font-bold text-slate-500 mt-2 truncate w-full text-center px-1" title={domain}>{domain.substring(0, 8)}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 h-64 flex flex-col items-center justify-center">
+                       <TrendingUp className="w-12 h-12 text-slate-300 mb-4" />
+                       <div className="text-xl font-bold text-slate-700">Detailed Report Generation</div>
+                       <button className="mt-4 px-6 py-2 bg-white border border-slate-200 rounded-full shadow-sm text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">Download CSV</button>
+                    </div>
+                  </div>
+                </div>
+            </div>
+
+             {/* Settings Tab */}
+             <div className={cn("flex flex-col animate-fadeIn", activeTab === 5 ? "flex" : "hidden")}>
+                <div className="bg-white rounded-[2rem] p-8 shadow-[0_4px_30px_rgba(59,130,246,0.03)] border border-slate-200">
+                  <h2 className="font-headline-lg text-headline-lg font-display font-bold text-slate-900 mb-4">System Settings</h2>
+                  <p className="font-body-lg text-body-lg text-slate-500 mb-6">Manage global preferences and your admin profile.</p>
+
+                  <div className="space-y-6 max-w-xl">
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                      <div>
+                        <div className="font-bold text-slate-900">Academic Year</div>
+                        <div className="text-sm text-slate-500 text-slate-500">Currently set to 2026.</div>
+                      </div>
+                      <button className="px-4 py-1.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-lg text-sm hover:bg-slate-100">Change</button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                      <div>
+                        <div className="font-bold text-slate-900">Sign Out</div>
+                        <div className="text-sm text-slate-500 text-slate-500">Log out of your administrative session.</div>
+                      </div>
+                      <button onClick={() => signOut(auth)} className="px-4 py-1.5 bg-red-50 text-red-600 border border-red-100 font-bold rounded-lg text-sm hover:bg-red-100">Sign Out</button>
+                    </div>
+                  </div>
+                </div>
+            </div>
+            
+          </div>
           {editingCourseId && editingCourseData && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn">
-              <div className="bg-white rounded-[2.5rem] p-8 md:p-10 max-w-2xl w-full shadow-2xl relative overflow-y-auto max-h-[90vh] custom-scrollbar">
+              <div className="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button 
-                  onClick={() => { setEditingCourseId(null); setEditingCourseData(null); }} 
-                  className="absolute top-8 right-8 text-slate-400 hover:text-slate-600 focus:outline-none"
+                  onClick={() => {
+                     setEditingCourseId(null);
+                     setEditingCourseData(null);
+                  }} 
+                  className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 focus:outline-none"
                 >
-                   <X className="w-6 h-6"/>
+                   <X className="w-5 h-5"/>
                 </button>
-                <h2 className="text-2xl font-display font-bold text-[#1A365D] mb-8">Course Configuration</h2>
+                <h2 className="text-xl font-bold text-slate-900 mb-6">Edit Course Details</h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Course Title</label>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">Course Name</label>
                     <input 
                       type="text" 
-                      value={editingCourseData.name} 
-                      onChange={(e) => setEditingCourseData({ ...editingCourseData, name: e.target.value })} 
-                      className="w-full border border-slate-200 rounded-xl p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                      value={editingCourseData.name || ''} 
+                      onChange={(e) => setEditingCourseData({...editingCourseData, name: e.target.value})}
+                      className="w-full border border-slate-200 rounded-lg p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
                     />
                   </div>
                   
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Domain</label>
-                    <select 
-                      value={editingCourseData.domain} 
-                      onChange={(e) => setEditingCourseData({ ...editingCourseData, domain: e.target.value })} 
-                      className="w-full border border-slate-200 rounded-xl p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none bg-white transition-all"
-                    >
-                      {Array.from(new Set(catalog.map(i => i.domain))).map(d => <option key={d} value={d}>{d}</option>)}
-                      <option value="New Domain...">+ Add New Domain</option>
-                    </select>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Domain</label>
+                        <select 
+                          value={editingCourseData.domain || ''} 
+                          onChange={(e) => setEditingCourseData({...editingCourseData, domain: e.target.value})}
+                          className="w-full border border-slate-200 rounded-lg p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none bg-white"
+                        >
+                          <option value="">Select Domain...</option>
+                          {Array.from(new Set(catalog.map(item => (item.domain || "").trim()))).filter(Boolean).sort().map(d => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Tier (Level)</label>
+                        <select 
+                          value={editingCourseData.tier || 1} 
+                          onChange={(e) => setEditingCourseData({...editingCourseData, tier: Number(e.target.value)})}
+                          className="w-full border border-slate-200 rounded-lg p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none bg-white"
+                        >
+                          <option value={1}>Tier 1</option>
+                          <option value={2}>Tier 2</option>
+                          <option value={3}>Tier 3</option>
+                        </select>
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Capacity</label>
+                        <input 
+                          type="number"
+                          value={editingCourseData.capacity || ''} 
+                          onChange={(e) => setEditingCourseData({...editingCourseData, capacity: parseInt(e.target.value) || 0})}
+                          className="w-full border border-slate-200 rounded-lg p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none bg-white"
+                          placeholder="e.g. 40"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Tier Level</label>
-                    <select 
-                      value={editingCourseData.tier} 
-                      onChange={(e) => setEditingCourseData({ ...editingCourseData, tier: Number(e.target.value) })} 
-                      className="w-full border border-slate-200 rounded-xl p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none bg-white transition-all"
-                    >
-                      <option value={1}>Tier 1 (Awareness)</option>
-                      <option value={2}>Tier 2 (Develop)</option>
-                      <option value={3}>Tier 3 (Deepen)</option>
-                    </select>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1">Level (e.g. JC1)</label>
+                      <input 
+                        type="text" 
+                        value={editingCourseData.level || ''} 
+                        onChange={(e) => setEditingCourseData({...editingCourseData, level: e.target.value})}
+                        className="w-full border border-slate-200 rounded-lg p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1">Term</label>
+                      <input 
+                        type="text" 
+                        value={editingCourseData.term || ''} 
+                        onChange={(e) => setEditingCourseData({...editingCourseData, term: e.target.value})}
+                        className="w-full border border-slate-200 rounded-lg p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1">Week</label>
+                      <input 
+                        type="text" 
+                        value={editingCourseData.week || ''} 
+                        onChange={(e) => setEditingCourseData({...editingCourseData, week: e.target.value})}
+                        className="w-full border border-slate-200 rounded-lg p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Level / Cohort</label>
-                    <input 
-                      type="text" 
-                      value={editingCourseData.level || ''} 
-                      onChange={(e) => setEditingCourseData({ ...editingCourseData, level: e.target.value })} 
-                      placeholder="e.g. JC1 & JC2"
-                      className="w-full border border-slate-200 rounded-xl p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Max Capacity</label>
-                    <input 
-                      type="number" 
-                      value={editingCourseData.capacity || 20} 
-                      onChange={(e) => setEditingCourseData({ ...editingCourseData, capacity: Number(e.target.value) })} 
-                      className="w-full border border-slate-200 rounded-xl p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                    />
-                  </div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Description</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-bold text-slate-700">Description</label>
+                      <button
+                        onClick={async () => {
+                          if (!editingCourseData.name || !editingCourseData.domain) {
+                            showNotification('Please enter a course name and domain first', 'err');
+                            return;
+                          }
+                          setIsGeneratingDescription(true);
+                          try {
+                            const res = await fetch('/api/generate-description', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                name: editingCourseData.name,
+                                domain: editingCourseData.domain,
+                                tier: editingCourseData.tier || 1
+                              })
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.error || 'Failed to generate');
+                            setEditingCourseData(prev => ({ ...prev, description: data.description }));
+                            showNotification('Description generated', 'success');
+                          } catch (err: any) {
+                            showNotification(err.message || 'Failed to generate description', 'err');
+                          } finally {
+                            setIsGeneratingDescription(false);
+                          }
+                        }}
+                        disabled={isGeneratingDescription}
+                        className="text-xs font-bold text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                      >
+                        {isGeneratingDescription ? (
+                          <div className="w-3 h-3 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin"></div>
+                        ) : (
+                          <Flame className="w-3 h-3" />
+                        )}
+                        Auto-Generate
+                      </button>
+                    </div>
                     <textarea 
-                      value={editingCourseData.description || ''} 
-                      onChange={(e) => setEditingCourseData({ ...editingCourseData, description: e.target.value })} 
                       rows={4}
-                      className="w-full border border-slate-200 rounded-xl p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all resize-none"
+                      value={editingCourseData.description || ''} 
+                      onChange={(e) => setEditingCourseData({...editingCourseData, description: e.target.value})}
+                      className="w-full border border-slate-200 rounded-lg p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-none"
                     />
                   </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Teacher Emails (Internal Only)</label>
-                    <input 
-                      type="text" 
-                      value={editingCourseData.ownerEmails?.join(', ') || ''} 
-                      onChange={(e) => setEditingCourseData({ ...editingCourseData, ownerEmails: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} 
-                      placeholder="teacher1@sajc.edu.sg, teacher2@sajc.edu.sg"
-                      className="w-full border border-slate-200 rounded-xl p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                    />
-                  </div>
+                  {isSuperAdminUser && (
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1">Assigned Teachers (Owner Emails, comma separated)</label>
+                      <input 
+                        type="text" 
+                        value={editingCourseData.ownerEmails?.join(', ') || ''} 
+                        onChange={(e) => {
+                          const emails = e.target.value.split(',').map(em => em.trim()).filter(em => em);
+                          setEditingCourseData({...editingCourseData, ownerEmails: emails});
+                        }}
+                        className="w-full border border-slate-200 rounded-lg p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                        placeholder="teacher1@sajc.edu.sg, teacher2@sajc.edu.sg"
+                      />
+                      <p className="text-[11px] text-slate-500 mt-1.5 font-medium">Emails must end with @sajc.edu.sg</p>
+                    </div>
+                  )}
 
-                  <div className="md:col-span-2 flex items-center gap-2 mb-4">
-                    <input 
-                      type="checkbox" 
-                      id="is-unlisted"
-                      checked={editingCourseData.isUnlisted || false} 
-                      onChange={(e) => setEditingCourseData({ ...editingCourseData, isUnlisted: e.target.checked })} 
-                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <label htmlFor="is-unlisted" className="text-sm font-bold text-slate-700 cursor-pointer">Unlisted (Visible only to teachers and via direct link)</label>
-                  </div>
-                  
-                  <div className="md:col-span-2 flex justify-end gap-3 mt-4">
+                  <div className="flex justify-end gap-3 pt-4">
                     <button 
-                      onClick={() => { setEditingCourseId(null); setEditingCourseData(null); }} 
-                      className="px-6 py-2.5 rounded-full text-slate-500 font-bold hover:bg-slate-100 transition-colors"
+                      onClick={() => {
+                        setEditingCourseId(null);
+                        setEditingCourseData(null);
+                      }} 
+                      className="px-5 py-2.5 rounded-full text-slate-600 font-bold hover:bg-slate-100 transition-colors"
                     >
                       Cancel
                     </button>
@@ -1803,7 +1823,7 @@ function MainApp({ user }: { user: User }) {
 
         {confirmCompleteItem && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl relative">
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-sm w-full shadow-2xl relative">
               <button onClick={() => setConfirmCompleteItem(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
                  <X className="w-5 h-5"/>
               </button>
