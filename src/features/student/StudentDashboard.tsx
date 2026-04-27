@@ -114,33 +114,32 @@ export function StudentDashboard({
 
                 <div className="w-full max-w-[1200px] mx-auto">
                     {/* Dashboard Tab */}
-                    <div className={cn("flex-1 overflow-y-auto w-full px-margin-mobile md:px-0 py-stack-lg md:py-section-gap no-scrollbar", activeTab === 0 ? "block" : "hidden")}>
-                        <section className="bg-[#1A365D] text-white rounded-[2rem] p-6 md:px-10 md:py-8 mb-6 relative overflow-hidden flex flex-col md:flex-row justify-between items-center z-10 shadow-lg shadow-blue-900/10">
-                            <div className="absolute right-0 top-0 w-[400px] h-[400px] bg-white/10 rounded-full blur-2xl -mr-32 -mt-32 pointer-events-none"></div>
-                            <div className="hidden md:block absolute right-12 top-10 w-64 h-64 bg-slate-900/40 rounded-[4rem] pointer-events-none transform -rotate-12"></div>
-
-                            <div className="relative z-10 w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+                    <div className={cn("flex-1 overflow-y-auto w-full px-4 md:px-0 py-8 md:py-12 no-scrollbar", activeTab === 0 ? "block" : "hidden")}>
+                        <section className="bg-primary text-white rounded-xl p-8 md:px-12 md:py-10 mb-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-center z-10 shadow-2xl shadow-primary/20 border border-white/5">
+                            <div className="absolute right-0 top-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none"></div>
+                            
+                            <div className="relative z-10 w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-10">
                                 <div className="max-w-xl">
-                                    <h1 className="font-display font-bold md:font-extrabold text-[28px] md:text-4xl mb-2 md:mb-4 tracking-tight">
+                                    <h1 className="font-display font-black text-3xl md:text-5xl mb-4 tracking-tighter">
                                         Welcome back, {profile.studentName.split(' ')[0]}.
                                     </h1>
-                                    <p className="text-[15px] md:text-lg text-blue-100 md:text-slate-300 font-medium mb-6 md:mb-0 leading-relaxed max-w-lg">
-                                        You have {profile.planned.length} upcoming deadlines and a new achievement badge waiting to be claimed. Keep up the excellent work.
+                                    <p className="text-base md:text-lg text-blue-100/80 font-medium leading-relaxed max-w-lg">
+                                        You have <span className="text-white font-bold">{profile.planned.length} upcoming activities</span> and a new achievement badge waiting to be claimed.
                                     </p>
                                 </div>
 
-                                <div className="flex items-center justify-between w-full md:w-auto bg-white/5 md:bg-white/10 p-5 md:px-8 md:py-6 rounded-2xl border border-white/10 backdrop-blur-sm shadow-xl shrink-0">
-                                    <div className="flex gap-8 mr-6 md:mr-10">
+                                <div className="flex items-center justify-between w-full md:w-auto bg-white/5 p-6 md:px-10 md:py-8 rounded-2xl border border-white/10 backdrop-blur-md shadow-2xl shrink-0">
+                                    <div className="flex gap-10 mr-10">
                                         <div>
-                                            <div className="text-[10px] font-bold text-blue-200 tracking-widest mb-1 uppercase">Completed</div>
-                                            <div className="text-2xl md:text-3xl font-display font-bold">{profile.completed.length}</div>
+                                            <div className="text-[10px] font-black text-blue-300 tracking-[0.2em] mb-2 uppercase opacity-70">Completed</div>
+                                            <div className="text-3xl md:text-4xl font-display font-black">{profile.completed.length}</div>
                                         </div>
                                         <div>
-                                            <div className="text-[10px] font-bold text-blue-200 tracking-widest mb-1 uppercase">Planned</div>
-                                            <div className="text-2xl md:text-3xl font-display font-bold">{profile.planned.length}</div>
+                                            <div className="text-[10px] font-black text-blue-300 tracking-[0.2em] mb-2 uppercase opacity-70">Planned</div>
+                                            <div className="text-3xl md:text-4xl font-display font-black">{profile.planned.length}</div>
                                         </div>
                                     </div>
-                                    <button onClick={() => setActiveTab(2)} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 md:px-8 md:py-4 rounded-full text-[11px] md:text-sm font-bold uppercase tracking-wider shadow-lg shadow-blue-900/20 active:scale-95 transition-all">
+                                    <button onClick={() => setActiveTab(2)} className="bg-white text-primary hover:bg-blue-50 px-8 py-4 rounded-xl text-xs font-black uppercase tracking-widest shadow-xl transition-all active:scale-95">
                                         View Schedule
                                     </button>
                                 </div>
@@ -170,90 +169,93 @@ export function StudentDashboard({
                         )}
 
                         <div className="flex flex-col gap-6">
-                            <div className={cn("grid grid-cols-1 lg:grid-cols-2 gap-6", focusMode && "hidden")}>
+                            <div className={cn("grid grid-cols-1 lg:grid-cols-2 gap-8", focusMode && "hidden")}>
                                 {/* Competency Profile - Radar chart block */}
-                                <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col h-full">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h2 className="font-display font-bold text-xl text-slate-900">Competency Profile</h2>
-                                        <button onClick={() => setActiveTab(3)} className="md:hidden flex items-center gap-1 text-[11px] font-bold text-[#0151B1] hover:text-blue-700 transition-colors uppercase tracking-wider">
-                                            View Details <ChevronRight className="w-4 h-4" />
+                                <section className="pro-card p-8 flex flex-col h-full bg-white">
+                                    <div className="flex justify-between items-center mb-8">
+                                        <h2 className="font-display font-black text-xl text-primary tracking-tight">Competency Profile</h2>
+                                        <button onClick={() => setActiveTab(3)} className="hidden md:flex items-center gap-1 text-[11px] font-black text-secondary hover:text-primary transition-colors uppercase tracking-widest">
+                                            Explorer <ChevronRight className="w-4 h-4" />
                                         </button>
                                     </div>
-                                    <div className="flex-1 flex flex-col items-center justify-center w-full">
-                                        <div className="w-full h-[200px] md:h-[220px] lg:h-[240px] relative z-10 px-0 md:px-4">
+                                    <div className="flex-1 flex flex-col items-center justify-center w-full min-h-[300px]">
+                                        <div className="w-full h-full relative z-10">
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData} style={{ overflow: 'visible' }}>
-                                                    <PolarGrid stroke="#e2e8f0" />
-                                                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fontFamily: 'Plus Jakarta Sans', fontWeight: 600, fill: '#475569', dy: 4 }} />
+                                                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData} style={{ overflow: 'visible' }}>
+                                                    <PolarGrid stroke="var(--color-outline-variant)" />
+                                                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fontFamily: 'Fira Sans', fontWeight: 700, fill: 'var(--color-on-surface-variant)', dy: 4 }} />
                                                     <PolarRadiusAxis angle={30} domain={[0, 15]} tick={false} axisLine={false} />
-                                                    <Radar name="Completed" dataKey="Completed" stroke="#3b82f6" strokeWidth={2} activeDot={{ r: 6 }} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} fill="#eff6ff" fillOpacity={0.8} />
+                                                    <Radar name="Completed" dataKey="Completed" stroke="var(--color-secondary)" strokeWidth={3} activeDot={{ r: 6 }} dot={{ r: 4, fill: 'var(--color-secondary)', strokeWidth: 2, stroke: '#fff' }} fill="var(--color-secondary)" fillOpacity={0.2} />
                                                 </RadarChart>
                                             </ResponsiveContainer>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2 justify-center mt-auto pt-6 border-t border-slate-50">
+                                    <div className="flex gap-3 justify-center mt-8 pt-6 border-t border-outline-variant/30">
                                         {topDomain && (topDomain.Completed > 2 || topDomain.Planned > 4) ? (
                                             <>
-                                                <span className="bg-blue-50 text-blue-600 text-[11px] font-bold px-3 py-1 rounded-full border border-blue-100 flex items-center shadow-sm">
-                                                    <Star className="w-3 h-3 mr-1 fill-blue-600" /> Focus: {topDomain.subject}
+                                                <span className="bg-secondary/10 text-secondary text-[10px] font-black px-4 py-2 rounded-lg border border-secondary/20 flex items-center shadow-sm uppercase tracking-widest">
+                                                    <Star className="w-3.5 h-3.5 mr-1.5 fill-secondary" /> {topDomain.subject}
                                                 </span>
-                                                <span className="bg-slate-100 text-slate-600 text-[11px] font-bold px-3 py-1 rounded-full border border-slate-200">
-                                                    {topDomain.Completed + topDomain.Planned - 6 > 0 ? (topDomain.Completed + topDomain.Planned - 6) * 10 : 0} Mastery Pts
+                                                <span className="bg-surface-dim text-on-surface-variant text-[10px] font-black px-4 py-2 rounded-lg border border-outline-variant uppercase tracking-widest">
+                                                    {topDomain.Completed + topDomain.Planned - 6 > 0 ? (topDomain.Completed + topDomain.Planned - 6) * 10 : 0} Mastery Points
                                                 </span>
                                             </>
                                         ) : (
-                                            <span className="bg-slate-100 text-slate-600 text-[11px] font-bold px-3 py-1 rounded-full border border-slate-200 text-center">
-                                                Start enrolling in courses to see your competency insights
+                                            <span className="bg-surface-dim text-on-surface-variant text-[10px] font-bold px-4 py-2 rounded-lg border border-outline-variant opacity-60">
+                                                No competency data available yet.
                                             </span>
                                         )}
                                     </div>
                                 </section>
 
                                 {/* Mastery Progression */}
-                                <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col h-full justify-center">
-                                    <div className="flex justify-between items-start mb-1">
-                                        <h2 className="font-display font-bold text-xl text-slate-900">Mastery Progression</h2>
-                                        <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1"><Star className="w-3 h-3 fill-emerald-700" /> {profile.completed.reduce((a, c) => a + c.tier, 0) * 10} pts</span>
+                                <section className="pro-card p-8 flex flex-col h-full bg-white">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h2 className="font-display font-black text-xl text-primary tracking-tight">Mastery Progression</h2>
+                                        <span className="bg-success/10 text-success text-[10px] font-black px-4 py-2 rounded-lg border border-success/20 flex items-center gap-1.5 uppercase tracking-widest shadow-sm">
+                                            <Star className="w-3.5 h-3.5 fill-success" /> 
+                                            {profile.completed.reduce((a, c) => a + c.tier, 0) * 10} pts
+                                        </span>
                                     </div>
-                                    <p className="text-sm font-medium text-slate-500 mb-8">Current Status: Advanced</p>
+                                    <p className="text-xs font-black text-on-surface-variant uppercase tracking-[0.2em] mb-10 opacity-60">Status: Advanced Tier</p>
 
-                                    <div className="mb-4">
-                                        <div className="flex justify-between text-xs font-bold text-slate-600 mb-2">
-                                            <span>Advanced Tier</span>
-                                            <span>Elite Tier (3,000 pts)</span>
+                                    <div className="mb-8">
+                                        <div className="flex justify-between text-[10px] font-black text-on-surface-variant uppercase tracking-widest mb-3">
+                                            <span>Current Stage</span>
+                                            <span>Elite (3,000 pts)</span>
                                         </div>
-                                        <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, Math.max(5, (profile.completed.reduce((a, c) => a + c.tier, 0) * 10) / 30))}%` }}></div>
+                                        <div className="w-full h-2.5 bg-surface-dim rounded-full overflow-hidden border border-outline-variant/30 p-0.5">
+                                            <div className="h-full bg-success rounded-full shadow-lg shadow-success/20 transition-all duration-1000" style={{ width: `${Math.min(100, Math.max(5, (profile.completed.reduce((a, c) => a + c.tier, 0) * 10) / 30))}%` }}></div>
                                         </div>
-                                        <p className="text-xs font-medium text-slate-400 mt-2 text-right">{3000 - (profile.completed.reduce((a, c) => a + c.tier, 0) * 10)} pts remaining to next tier</p>
-                                    </div>
-
-                                    <div className="flex gap-4 mb-4">
-                                        <div className="bg-slate-50 p-3 flex-1 flex flex-col items-center justify-center rounded-xl border border-slate-100">
-                                            <span className="text-[10px] font-bold text-slate-400 tracking-wider mb-0.5 uppercase">Tier 1</span>
-                                            <span className="text-lg font-display font-bold text-slate-700">{profile.completed.reduce((a, c) => a + (c.tier === 1 ? 10 : 0), 0) || 450}</span>
-                                        </div>
-                                        <div className="bg-slate-50 p-3 flex-1 flex flex-col items-center justify-center rounded-xl border border-slate-100">
-                                            <span className="text-[10px] font-bold text-slate-400 tracking-wider mb-0.5 uppercase">Tier 2</span>
-                                            <span className="text-lg font-display font-bold text-slate-700">{profile.completed.reduce((a, c) => a + (c.tier === 2 ? 20 : 0), 0) || 120}</span>
-                                        </div>
+                                        <p className="text-[10px] font-bold text-outline mt-3 text-right tabular-nums">{3000 - (profile.completed.reduce((a, c) => a + c.tier, 0) * 10)} PTS TO ELITE</p>
                                     </div>
 
-                                    <div className="flex-1 mt-2 lg:mt-6 border-t border-slate-100 pt-4 lg:pt-6">
-                                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Recent Achievements</h3>
+                                    <div className="flex gap-4 mb-8">
+                                        <div className="bg-surface-dim p-5 flex-1 flex flex-col items-center justify-center rounded-xl border border-outline-variant/30">
+                                            <span className="text-[10px] font-black text-outline tracking-widest mb-1.5 uppercase">Tier 1</span>
+                                            <span className="text-2xl font-display font-black text-primary tabular-nums">{profile.completed.reduce((a, c) => a + (c.tier === 1 ? 10 : 0), 0) || 0}</span>
+                                        </div>
+                                        <div className="bg-surface-dim p-5 flex-1 flex flex-col items-center justify-center rounded-xl border border-outline-variant/30">
+                                            <span className="text-[10px] font-black text-outline tracking-widest mb-1.5 uppercase">Tier 2</span>
+                                            <span className="text-2xl font-display font-black text-primary tabular-nums">{profile.completed.reduce((a, c) => a + (c.tier === 2 ? 20 : 0), 0) || 0}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 mt-auto border-t border-outline-variant/30 pt-8">
+                                        <h3 className="text-[10px] font-black text-outline uppercase tracking-widest mb-6">Recent Achievements</h3>
                                         {profile.completed.length === 0 ? (
-                                            <div className="text-center py-6 bg-slate-50 rounded-xl border border-slate-100 border-dashed">
-                                                <p className="text-sm font-medium text-slate-500">No milestones yet</p>
+                                            <div className="text-center py-10 bg-surface-dim rounded-xl border border-outline-variant border-dashed">
+                                                <p className="text-xs font-bold text-outline opacity-60">No milestones recorded yet.</p>
                                             </div>
                                         ) : (
-                                            <div className="space-y-3">
+                                            <div className="space-y-4">
                                                 {profile.completed.slice(-2).reverse().map((c, i) => (
-                                                    <div key={i} className="flex justify-between items-center bg-slate-50 px-4 py-3 rounded-xl border border-slate-100 overflow-hidden">
+                                                    <div key={i} className="flex justify-between items-center bg-surface-bright px-5 py-4 rounded-xl border border-outline-variant shadow-sm group/item hover:border-secondary transition-all">
                                                         <div className="min-w-0 pr-4">
-                                                            <p className="text-[13px] font-bold text-slate-900 truncate">{c.name}</p>
-                                                            <p className="text-[11px] font-medium text-slate-500 mt-0.5">{c.domain}</p>
+                                                            <p className="text-sm font-black text-primary truncate tracking-tight">{c.name}</p>
+                                                            <p className="text-[10px] font-bold text-outline mt-1 uppercase tracking-wider">{c.domain}</p>
                                                         </div>
-                                                        <span className="shrink-0 text-emerald-600 bg-emerald-100/50 px-2.5 py-1 rounded-md text-[11px] font-bold">+{c.tier * 10} pts</span>
+                                                        <span className="shrink-0 text-success bg-success/10 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border border-success/20">+{c.tier * 10}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -337,99 +339,105 @@ export function StudentDashboard({
                                     );
                                 })}
                                 <div className="ml-auto flex items-center gap-2 pl-4">
-                                    <button onClick={() => setShowFilters(!showFilters)} className={cn("flex items-center gap-2 text-sm font-bold transition-colors", showFilters ? "text-primary" : "text-slate-600 hover:text-primary")}>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg> Filters
+                                    <button onClick={() => setShowFilters(!showFilters)} className={cn("px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 shrink-0 shadow-sm", showFilters ? "bg-primary text-white" : "bg-surface-dim text-primary border border-outline-variant hover:bg-surface-bright")}>
+                                        <Database className="w-4 h-4" /> {showFilters ? 'Hide Advanced' : 'Show Advanced'}
                                     </button>
                                 </div>
                             </div>
 
                             {showFilters && (
-                                <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10 animate-in fade-in slide-in-from-top-4 duration-300">
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Level</label>
-                                        <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 bg-white p-8 rounded-2xl border border-outline-variant shadow-2xl shadow-primary/5 mt-6 animate-slideIn">
+                                    <div className="space-y-3">
+                                        <label className="block text-[10px] font-black text-outline uppercase tracking-[0.2em] opacity-60">Academic Level</label>
+                                        <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value)} className="w-full bg-surface-dim border border-outline-variant rounded-xl px-4 py-3 text-xs font-bold text-primary focus:border-primary outline-none appearance-none cursor-pointer">
                                             <option value="all">All Levels</option>
                                             {filterOptions.levels?.map((l: string) => <option key={l} value={l}>{l}</option>)}
                                         </select>
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Term</label>
-                                        <select value={termFilter} onChange={(e) => setTermFilter(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                    <div className="space-y-3">
+                                        <label className="block text-[10px] font-black text-outline uppercase tracking-[0.2em] opacity-60">Target Term</label>
+                                        <select value={termFilter} onChange={(e) => setTermFilter(e.target.value)} className="w-full bg-surface-dim border border-outline-variant rounded-xl px-4 py-3 text-xs font-bold text-primary focus:border-primary outline-none appearance-none cursor-pointer">
                                             <option value="all">All Terms</option>
                                             {filterOptions.terms?.map((t: string) => <option key={t} value={t}>Term {t}</option>)}
                                         </select>
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Week</label>
-                                        <select value={weekFilter} onChange={(e) => setWeekFilter(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                    <div className="space-y-3">
+                                        <label className="block text-[10px] font-black text-outline uppercase tracking-[0.2em] opacity-60">Specific Week</label>
+                                        <select value={weekFilter} onChange={(e) => setWeekFilter(e.target.value)} className="w-full bg-surface-dim border border-outline-variant rounded-xl px-4 py-3 text-xs font-bold text-primary focus:border-primary outline-none appearance-none cursor-pointer">
                                             <option value="all">All Weeks</option>
                                             {filterOptions.weeks?.map((w: string) => <option key={w} value={w}>Week {w}</option>)}
                                         </select>
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tier</label>
-                                        <select value={tierFilter} onChange={(e) => setTierFilter(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                    <div className="space-y-3">
+                                        <label className="block text-[10px] font-black text-outline uppercase tracking-[0.2em] opacity-60">Talent Tier</label>
+                                        <select value={tierFilter} onChange={(e) => setTierFilter(e.target.value)} className="w-full bg-surface-dim border border-outline-variant rounded-xl px-4 py-3 text-xs font-bold text-primary focus:border-primary outline-none appearance-none cursor-pointer">
                                             <option value="all">All Tiers</option>
-                                            <option value="1">Tier 1</option>
-                                            <option value="2">Tier 2</option>
-                                            <option value="3">Tier 3</option>
+                                            <option value="1">Tier 1: Awareness</option>
+                                            <option value="2">Tier 2: Develop</option>
+                                            <option value="3">Tier 3: Deepen</option>
                                         </select>
                                     </div>
                                 </div>
                             )}
                         </section>
 
-                        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-margin-mobile md:px-0">
+                        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                             {filteredCatalog.map(item => {
                                 const locked = isTierLocked(item);
                                 const added = profile.planned.some(p => p.id === item.id) || profile.completed.some(c => c.id === item.id);
                                 const isBookmarked = profile.bookmarks.some(b => b.id === item.id);
                                 return (
-                                    <div key={item.id} onClick={() => setSelectedItem(item)} className="bg-white border border-slate-200 rounded-lg overflow-hidden flex flex-col shadow-sm cursor-pointer group hover:shadow-xl hover:border-slate-300 transition-all duration-300 transform hover:-translate-y-1">
-                                        <div className="relative h-48 bg-slate-900 border-b border-slate-100 flex items-center justify-center">
-                                            <button onClick={(e) => { e.stopPropagation(); handleToggleBookmark(item); }} className={cn("absolute top-3 left-3 z-20 p-2 rounded-full transition-all backdrop-blur-md", isBookmarked ? "bg-red-500 text-white shadow-lg" : "bg-white/80 text-slate-400 hover:text-red-500 hover:bg-white")}>
-                                                <Heart className={cn("w-4 h-4", isBookmarked ? "fill-current" : "")} />
+                                    <div key={item.id} onClick={() => setSelectedItem(item)} className="pro-card bg-white flex flex-col group cursor-pointer border border-outline-variant/30 hover:border-secondary/40 transition-all duration-500">
+                                        <div className="relative h-56 bg-slate-900 border-b border-outline-variant/10 overflow-hidden shrink-0">
+                                            <button onClick={(e) => { e.stopPropagation(); handleToggleBookmark(item); }} className={cn("absolute top-4 left-4 z-20 w-10 h-10 rounded-xl transition-all flex items-center justify-center backdrop-blur-xl border border-white/20", isBookmarked ? "bg-error text-white shadow-xl shadow-error/20" : "bg-white/10 text-white/60 hover:text-white hover:bg-white/20")}>
+                                                <Heart className={cn("w-5 h-5", isBookmarked ? "fill-current" : "")} />
                                             </button>
                                             {item.image ? (
-                                                <img src={item.image} alt={item.name} className={cn("w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity", locked ? "grayscale opacity-50" : "")} />
+                                                <img src={item.image} alt={item.name} className={cn("w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700", locked ? "grayscale opacity-30" : "")} />
                                             ) : (
-                                                <BookOpen className={cn("w-16 h-16 opacity-20 text-white", locked ? "grayscale opacity-10" : "")} />
+                                                <div className="w-full h-full flex items-center justify-center bg-primary/5">
+                                                    <BookOpen className={cn("w-16 h-16 opacity-10 text-primary", locked ? "grayscale opacity-5" : "")} />
+                                                </div>
                                             )}
                                             {locked && (
-                                                <div className="absolute inset-0 bg-slate-900/60 z-10 flex flex-col items-center justify-center gap-2 px-3">
-                                                    <Lock className="text-white w-6 h-6 drop-shadow-md" />
-                                                    <span className="text-white text-[10px] font-bold text-center leading-tight">{getLockReason(item)}</span>
+                                                <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center gap-3 px-6">
+                                                    <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                                                        <Lock className="text-white w-6 h-6" />
+                                                    </div>
+                                                    <span className="text-white text-[10px] font-black text-center leading-tight uppercase tracking-widest drop-shadow-lg">{getLockReason(item)}</span>
                                                 </div>
                                             )}
-                                            <div className="absolute top-3 right-3 bg-white/95 px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm z-20">
-                                                <div className={cn("w-2 h-2 rounded-full", item.tier === 1 ? "bg-emerald-500" : item.tier === 2 ? "bg-blue-500" : "bg-red-500")} />
-                                                <span className="text-[11px] font-bold text-slate-800 tracking-wide uppercase">{getTierName(item.tier)}</span>
+                                            <div className="absolute top-4 right-4 glass-panel px-4 py-2 rounded-xl flex items-center gap-2 shadow-2xl z-20 border border-white/10">
+                                                <div className={cn("w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.1)]", item.tier === 1 ? "bg-success" : item.tier === 2 ? "bg-secondary" : "bg-error")} />
+                                                <span className="text-[10px] font-black text-white tracking-[0.15em] uppercase">{getTierName(item.tier)}</span>
                                             </div>
                                         </div>
-                                        <div className="p-5 flex flex-col flex-grow">
-                                            <div className="flex flex-wrap gap-2 mb-3">
-                                                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-wider border border-blue-100/50">{item.domain}</span>
-                                                {item.level && <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-wider border border-slate-200/50">{item.level}</span>}
-                                                {locked && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded uppercase tracking-wider border border-amber-100 flex items-center gap-1"><Lock className="w-2.5 h-2.5" /> Advanced</span>}
-                                                {item.term && <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-wider border border-slate-200/50">{item.term}{item.week ? `, Wk ${item.week}` : ''}</span>}
+                                        <div className="p-7 flex flex-col flex-grow">
+                                            <div className="flex flex-wrap gap-2 mb-4">
+                                                <span className="text-[9px] font-black text-secondary bg-secondary/5 px-3 py-1.5 rounded-lg uppercase tracking-widest border border-secondary/10">{item.domain}</span>
+                                                {item.level && <span className="text-[9px] font-black text-outline bg-surface-dim px-3 py-1.5 rounded-lg uppercase tracking-widest border border-outline-variant">{item.level}</span>}
                                             </div>
-                                            <h3 className="font-display font-bold text-xl mb-2 text-slate-900 leading-tight group-hover:text-primary transition-colors pr-2 line-clamp-2">{item.name}</h3>
-                                            <p className="text-sm text-slate-500 mb-6 flex-grow line-clamp-3 leading-relaxed">{item.description || 'Master core concepts and practical applications in this specialized course.'}</p>
+                                            <h3 className="font-display font-black text-lg mb-3 text-primary leading-tight group-hover:text-secondary transition-colors line-clamp-2 tracking-tight">{item.name}</h3>
+                                            <p className="text-xs font-medium text-on-surface-variant opacity-60 mb-8 flex-grow line-clamp-3 leading-relaxed">{item.description || 'Master core concepts and practical applications in this specialized course.'}</p>
 
-                                            <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-auto">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                                                        {item.enrolled || 0} Enrolled (Max {item.capacity || 20})
-                                                    </span>
+                                            <div className="flex flex-col gap-5 pt-6 border-t border-outline-variant/30 mt-auto">
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex justify-between text-[9px] font-black text-outline uppercase tracking-widest opacity-60">
+                                                        <span>Capacity</span>
+                                                        <span>{item.enrolled || 0} / {item.capacity || 20}</span>
+                                                    </div>
+                                                    <div className="w-full h-1.5 bg-surface-dim rounded-full overflow-hidden border border-outline-variant/10">
+                                                        <div className="h-full bg-primary/20 transition-all duration-1000" style={{ width: `${Math.min(100, ((item.enrolled || 0) / (item.capacity || 20)) * 100)}%` }}></div>
+                                                    </div>
                                                 </div>
                                                 {locked ? (
-                                                    <button className="bg-slate-100 outline-none text-slate-400 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider cursor-not-allowed">Locked</button>
+                                                    <button className="w-full bg-surface-dim text-outline/40 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-outline-variant cursor-not-allowed">Locked Access</button>
                                                 ) : added ? (
-                                                    <button className="bg-emerald-50 outline-none text-emerald-600 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider cursor-default">Enrolled</button>
+                                                    <button className="w-full bg-success/5 text-success py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-success/20 cursor-default">Registered</button>
                                                 ) : profile.pending.some(p => p.id === item.id) ? (
-                                                    <button className="bg-amber-50 outline-none text-amber-600 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider cursor-default">Pending</button>
+                                                    <button className="w-full bg-secondary/5 text-secondary py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-secondary/20 cursor-default">Waitlist Pending</button>
                                                 ) : (
-                                                    <button onClick={(e) => { e.stopPropagation(); handleEnrollClick(item); }} className="bg-blue-600 outline-none hover:bg-blue-700 text-white px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider shadow-md shadow-blue-500/20 transition-all hover:shadow-lg">Enroll</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); handleEnrollClick(item); }} className="w-full bg-primary text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 transition-all active:scale-95 hover:bg-primary/90">Enroll Now</button>
                                                 )}
                                             </div>
                                         </div>

@@ -1,179 +1,160 @@
-﻿import React from 'react';
-import { Search, LayoutDashboard, BookOpen, Users, Bell, TrendingUp, Settings, Shield, Calendar, Star } from 'lucide-react';
-import { User, signOut } from 'firebase/auth';
-import { auth } from '../lib/firebase';
-import { cn } from '../utils';
+import React from 'react';
+import { LayoutDashboard, Users, BookOpen, TrendingUp, Settings, Bell, Search, Menu, X, ArrowLeft, Star, Clock, Home, Calendar, GraduationCap } from 'lucide-react';
+import { User } from 'firebase/auth';
 import { Profile } from '../types';
+import { cn } from '../utils';
 
-export function DesktopTopBar({ profile, focusMode, setFocusMode }: { profile: Profile, focusMode: boolean, setFocusMode: (v: boolean) => void }) {
-  return (
-    <div className="hidden md:flex items-center w-full h-20 border-b border-slate-200 bg-slate-50/50 sticky top-0 z-30 backdrop-blur-md">
-      <div className="w-full max-w-[1200px] mx-auto px-10 flex items-center justify-between">
-        <div className="flex-1 max-w-xl">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Search courses, peers..." 
-              className="w-full bg-white border border-slate-200 rounded-full py-2.5 pl-11 pr-4 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-shadow"
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-3 ml-4">
-          <button
-            id="focus-mode-toggle"
-            onClick={() => setFocusMode(!focusMode)}
-            title={focusMode ? 'Exit Focus Mode' : 'Enter Focus Mode (TL;DR View)'}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border transition-all",
-              focusMode
-                ? "bg-[#1A365D] text-white border-[#1A365D] shadow-md"
-                : "bg-white text-slate-500 border-slate-200 hover:border-[#1A365D] hover:text-[#1A365D]"
-            )}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
-            </svg>
-            {focusMode ? 'Focus ON' : 'Focus Mode'}
-          </button>
-          <button onClick={() => alert('Settings available via sidebar')} className="w-10 h-10 rounded-full flex items-center justify-center text-white bg-slate-800 shadow-sm hover:shadow-md transition-all">
-            {profile?.studentName?.charAt(0) || 'U'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+interface NavProps {
+    profile: Profile;
+    activeTab: number;
+    setActiveTab: (tab: number) => void;
+    isAdminUser: boolean;
+    showAdminPanel: boolean;
+    setShowAdminPanel: (show: boolean) => void;
 }
 
-export function TopNavBar({ profile, activeTab, setActiveTab, isAdminUser, showAdminPanel, setShowAdminPanel }: any) {
-  return (
-    <header className="md:hidden w-full sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-md shadow-sm">
-      <div className="flex justify-between items-center w-full px-5 py-3">
-        <div onClick={() => setActiveTab(showAdminPanel ? 5 : 4)} className="w-8 h-8 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200 cursor-pointer">
-          <img src={profile.studentName === 'Test Student' ? "https://i.pravatar.cc/150?u=mock" : "https://i.pravatar.cc/150?u=a042581f4e29026704d"} className="w-full h-full object-cover" alt="User" />
-        </div>
-        <div className="font-display font-black text-sm text-[#1A365D] tracking-tighter uppercase">
-          SAJC TDP Roadmap
-        </div>
-        <div className="flex items-center gap-2">
-          {isAdminUser && (
-            <button 
-              onClick={() => {
-                setShowAdminPanel(!showAdminPanel);
-                setActiveTab(0);
-              }} 
-              className={cn("p-1.5 rounded-lg transition-colors", showAdminPanel ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-600")}
-              title="Toggle Teacher View"
-            >
-              <Shield className="w-5 h-5" />
+export const TopNavBar: React.FC<NavProps & { user: User | null }> = ({ profile, activeTab, setActiveTab, isAdminUser, showAdminPanel, setShowAdminPanel, user }) => {
+    return (
+        <header className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 z-[100] px-6 flex items-center justify-between md:hidden">
+            <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                    <Star className="w-5 h-5 text-white fill-white" />
+                </div>
+                <span className="font-display font-black text-lg tracking-tighter text-primary">TDP</span>
+            </div>
+            <button className="p-2 text-slate-600">
+                <Menu className="w-6 h-6" />
             </button>
-          )}
-        </div>
-      </div>
-    </header>
-  );
-}
+        </header>
+    );
+};
 
-export function SideNavBar({ profile, activeTab, setActiveTab, isAdminUser, showAdminPanel, setShowAdminPanel }: any) {
-  const adminTabs = [
-    { id: 'nav-admin-overview', icon: LayoutDashboard, label: 'Overview' },
-    { id: 'nav-admin-catalog', icon: BookOpen, label: 'Catalog ' },
-    { id: 'nav-admin-students', icon: Users, label: 'Students' },
-    { id: 'nav-admin-requests', icon: Bell, label: 'Requests' },
-    { id: 'nav-admin-analytics', icon: TrendingUp, label: 'Analytics' },
-    { id: 'nav-admin-settings', icon: Settings, label: 'Settings' }
-  ];
-  const studentTabs = [
-    { id: 'nav-student-dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'nav-student-catalog', icon: BookOpen, label: 'Course Catalog' },
-    { id: 'nav-student-schedule', icon: Calendar, label: 'Schedule' },
-    { id: 'nav-student-achievements', icon: Star, label: 'Achievements' },
-    { id: 'nav-student-settings', icon: Settings, label: 'Settings' }
-  ];
-  
-  // Custom Star icon since it's missing in studentTabs above (Star was imported but not used in the original array)
-  // Wait, I should import Star.
-  
-  const tabs = showAdminPanel ? adminTabs : studentTabs;
+export const SideNavBar: React.FC<NavProps> = ({ profile, activeTab, setActiveTab, isAdminUser, showAdminPanel, setShowAdminPanel }) => {
+    const tabs = showAdminPanel 
+        ? [
+            { id: 0, icon: LayoutDashboard, label: 'Overview' },
+            { id: 1, icon: BookOpen, label: 'Catalog' },
+            { id: 2, icon: Users, label: 'Students' },
+            { id: 3, icon: Bell, label: 'Requests' },
+            { id: 4, icon: TrendingUp, label: 'Analytics' },
+            { id: 5, icon: Settings, label: 'Settings' }
+          ]
+        : [
+            { id: 0, icon: LayoutDashboard, label: 'Dashboard' },
+            { id: 1, icon: Search, label: 'Catalog' },
+            { id: 2, icon: Calendar, label: 'Schedule' },
+            { id: 3, icon: GraduationCap, label: 'Achievements' },
+            { id: 4, icon: Settings, label: 'Settings' }
+          ];
 
-  return (
-    <nav aria-label="Main Navigation" id="desktop-sidebar-nav" className="bg-[#F8FAFC] h-screen w-[88px] hover:w-64 fixed left-0 top-0 border-r border-[#E2E8F0] flex flex-col py-10 px-4 hover:px-6 gap-y-4 z-50 transition-all duration-300 ease-in-out transform hidden md:flex overflow-hidden group">
-      <button aria-label="Toggle Navigation Mode" id="toggle-admin-panel-btn" className="mb-10 flex flex-col items-center text-center cursor-pointer border-none bg-transparent" onClick={() => isAdminUser ? setShowAdminPanel(!showAdminPanel) : null}>
-        <div className="w-14 h-14 shrink-0 rounded-full bg-[#1A365D] text-white flex items-center justify-center mb-4 shadow-sm font-bold text-xl transition-all duration-300 group-hover:w-16 group-hover:h-16 group-hover:text-2xl">
-          {isAdminUser ? 'A' : profile?.studentName?.charAt(0) || 'U'}
-        </div>
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300">
-            <h1 className="text-[28px] font-extrabold text-[#1A365D] tracking-tight font-display leading-none">SAJC</h1>
-            <p className="text-[13px] text-slate-500 font-medium tracking-wide mt-1">{showAdminPanel ? 'Teacher Console' : 'TDP Roadmap'}</p>
-        </div>
-      </button>
-      <div className="flex-1 flex flex-col gap-2" role="menu">
-        {tabs.map((item, i) => (
-          <button
-            key={i}
-            id={item.id}
-            role="menuitem"
-            aria-current={activeTab === i ? 'page' : undefined}
-            onClick={() => setActiveTab(i)}
-            className={cn(
-              "px-4 py-3.5 rounded-2xl flex items-center transition-all w-full text-left font-['Plus_Jakarta_Sans'] text-sm font-bold tracking-wide overflow-hidden",
-              activeTab === i
-                ? "bg-[#1A365D] text-white shadow-lg shadow-[#1A365D]/30"
-                : "text-slate-500 hover:text-[#1A365D] hover:bg-slate-200/50"
+    return (
+        <nav className="fixed top-0 left-0 bottom-0 w-[88px] bg-white border-r border-slate-200 z-[100] hidden md:flex flex-col items-center py-8">
+            <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mb-12 shadow-lg shadow-primary/20 rotate-3">
+                <Star className="w-6 h-6 text-white fill-white" />
+            </div>
+            
+            <div className="flex-1 flex flex-col gap-4">
+                {tabs.map((tab) => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={cn(
+                            "w-12 h-12 rounded-2xl flex items-center justify-center transition-all group relative",
+                            activeTab === tab.id 
+                                ? "bg-primary text-white shadow-xl shadow-primary/20" 
+                                : "text-slate-400 hover:bg-slate-50 hover:text-primary"
+                        )}
+                    >
+                        <tab.icon className="w-5 h-5" />
+                        <div className="absolute left-16 px-3 py-1.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                            {tab.label}
+                        </div>
+                    </button>
+                ))}
+            </div>
+
+            {isAdminUser && (
+                <button
+                    onClick={() => setShowAdminPanel(!showAdminPanel)}
+                    className={cn(
+                        "w-12 h-12 rounded-2xl flex items-center justify-center transition-all mt-auto border-2",
+                        showAdminPanel 
+                            ? "bg-secondary/10 border-secondary text-secondary" 
+                            : "bg-slate-50 border-transparent text-slate-400 hover:border-slate-200 hover:text-slate-600"
+                    )}
+                >
+                    <Settings className="w-5 h-5" />
+                </button>
             )}
-          >
-            <item.icon aria-hidden="true" className={cn("w-6 h-6 shrink-0", activeTab !== i && "transition-transform")} />
-            <span className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">{item.label}</span>
-          </button>
-        ))}
-      </div>
-    </nav>
-  );
-}
+        </nav>
+    );
+};
 
-export function BottomNavBar({ activeTab, setActiveTab, showAdminPanel }: any) {
-  const adminTabs = [
-    { icon: LayoutDashboard, label: 'OVERVIEW' },
-    { icon: BookOpen, label: 'CATALOG' },
-    { icon: Users, label: 'STUDENTS' },
-    { icon: Bell, label: 'REQUESTS' },
-    { icon: TrendingUp, label: 'ANALYTICS' }
-  ];
-  const studentTabs = [
-    { icon: LayoutDashboard, label: 'DASHBOARD' },
-    { icon: BookOpen, label: 'COURSES' },
-    { icon: Calendar, label: 'SCHEDULE' },
-    { icon: TrendingUp, label: 'PROGRESS' }
-  ];
-  const tabs = showAdminPanel ? adminTabs : studentTabs;
+export const DesktopTopBar: React.FC<{ profile: Profile; focusMode: boolean; setFocusMode: (f: boolean) => void }> = ({ profile, focusMode, setFocusMode }) => {
+    return (
+        <div className="hidden md:flex h-20 items-center justify-between px-10 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-50">
+            <div className="flex items-center gap-4">
+                <div className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Session Active</div>
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+            </div>
 
-  return (
-    <>
-      {activeTab === 0 && !showAdminPanel && (
-        <button onClick={() => setActiveTab(1)} className="md:hidden fixed bottom-28 right-6 w-14 h-14 bg-[#0151B1] hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30 z-40 transition-transform active:scale-95">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        </button>
-      )}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center pt-4 pb-8 px-2 bg-[#F8FAFC] border-t border-slate-200">
-        {tabs.map((item, i) => (
-          <button 
-            key={i}
-            onClick={() => setActiveTab(i)}
-            className={cn(
-              "flex flex-col items-center justify-center min-w-[64px] transition-all duration-200 active:scale-95",
-              activeTab === i 
-                ? "text-[#0151B1] scale-100" 
-                : "text-[#94A3B8] scale-100"
-            )}
-          >
-            <item.icon className="w-6 h-6 mb-1.5" strokeWidth={activeTab === i ? 2.5 : 2} />
-            <span className={cn("font-display text-[10px] font-bold tracking-wider leading-none", activeTab === i ? "text-[#0151B1]" : "text-[#94A3B8]")}>
-              {item.label}
-            </span>
-          </button>
-        ))}
-      </nav>
-    </>
-  );
-}
+            <div className="flex items-center gap-6">
+                <button 
+                    onClick={() => setFocusMode(!focusMode)}
+                    className={cn(
+                        "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                        focusMode ? "bg-primary text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    )}
+                >
+                    {focusMode ? 'Focus: ON' : 'Focus Mode'}
+                </button>
+                
+                <div className="h-8 w-px bg-slate-200"></div>
+                
+                <div className="flex items-center gap-4">
+                    <div className="text-right">
+                        <div className="text-[11px] font-black text-primary uppercase tracking-tight">{profile.studentName}</div>
+                        <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Year 1 Student</div>
+                    </div>
+                    <div className="w-10 h-10 bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-center font-display font-black text-primary text-xs shadow-sm">
+                        {profile.studentName.charAt(0)}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
+export const BottomNavBar: React.FC<{ activeTab: number; setActiveTab: (t: number) => void; showAdminPanel: boolean }> = ({ activeTab, setActiveTab, showAdminPanel }) => {
+    const tabs = showAdminPanel 
+        ? [
+            { id: 0, icon: LayoutDashboard, label: 'Home' },
+            { id: 1, icon: BookOpen, label: 'Catalog' },
+            { id: 3, icon: Bell, label: 'Requests' }
+          ]
+        : [
+            { id: 0, icon: Home, label: 'Home' },
+            { id: 1, icon: Search, label: 'Catalog' },
+            { id: 2, icon: Calendar, label: 'Schedule' }
+          ];
+
+    return (
+        <div className="md:hidden fixed bottom-6 left-6 right-6 z-[100] animate-fadeInUp">
+            <div className="glass-panel px-6 py-4 rounded-[2.5rem] shadow-2xl flex items-center justify-around border border-white/20">
+                {tabs.map((tab) => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={cn(
+                            "flex flex-col items-center gap-1.5 transition-all duration-300",
+                            activeTab === tab.id ? "text-white scale-110" : "text-white/40 hover:text-white/60"
+                        )}
+                    >
+                        <tab.icon className={cn("w-6 h-6", activeTab === tab.id ? "fill-white/10" : "")} />
+                        <span className="text-[8px] font-black uppercase tracking-[0.2em]">{tab.label}</span>
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+};
