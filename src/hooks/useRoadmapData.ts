@@ -11,7 +11,8 @@ import {
   serverTimestamp,
   orderBy,
   limit,
-  updateDoc
+  updateDoc,
+  increment
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Opportunity, Profile } from '../types';
@@ -138,6 +139,14 @@ export function useRoadmapData(user: User | null) {
 
       const newCourseRef = doc(collection(db, 'users', user.uid, 'courses'));
       await setDoc(newCourseRef, dataToSet);
+      
+      // Increment catalog count for Tier 1/2 items that go straight to 'planned'
+      if (status === 'planned') {
+        await updateDoc(doc(db, 'opportunities', item.id), {
+          enrolled: increment(1)
+        });
+      }
+      
       showNotification(status === 'pending' ? 'Enrollment request sent for approval!' : `Added "${item.name}" to your roadmap.`);
       return true;
     } catch (err) {
@@ -148,8 +157,21 @@ export function useRoadmapData(user: User | null) {
 
   const handleRemoveItem = async (docId: string) => {
     if (!user) return false;
+    
+    // Find item metadata before deletion to update catalog counts
+    const allCourses = [...profile.planned, ...profile.pending, ...profile.completed, ...profile.rejected];
+    const itemToRemove = allCourses.find(c => c.id === docId);
+
     try {
       await deleteDoc(doc(db, 'users', user.uid, 'courses', docId));
+      
+      // Decrement catalog count if the item was already approved/completed
+      if (itemToRemove && (itemToRemove.status === 'planned' || itemToRemove.status === 'completed')) {
+        await updateDoc(doc(db, 'opportunities', itemToRemove.opportunityId), {
+          enrolled: increment(-1)
+        });
+      }
+
       showNotification("Item removed from your roadmap.");
       return true;
     } catch (err) {

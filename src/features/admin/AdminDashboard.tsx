@@ -237,7 +237,7 @@ export function AdminDashboard({
                                 <button
                                     onClick={() => {
                                         setEditingCourseId('new-' + Date.now().toString());
-                                        setEditingCourseData({ name: '', domain: '', tier: 1, enrolled: 0, capacity: 20 });
+                                        setEditingCourseData({ name: '', domain: '', tier: 1, enrolled: 0, capacity: 20, ownerEmails: user?.email ? [user.email] : [] });
                                     }}
                                     className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-label-bold text-label-bold rounded-full shadow-md transition-all uppercase tracking-wider flex items-center justify-center gap-2"
                                 >
@@ -395,7 +395,13 @@ export function AdminDashboard({
                                                 const cleanData = { ...editingCourseData };
                                                 if (cleanData.enrolled === undefined) cleanData.enrolled = 0;
                                                 delete (cleanData as any).id;
-                                                b.set(doc(db, 'opportunities', editingCourseId as string), cleanData, { merge: true });
+
+                                                let docRef = doc(db, 'opportunities', editingCourseId as string);
+                                                if (editingCourseId?.startsWith('new-')) {
+                                                    docRef = doc(collection(db, 'opportunities'));
+                                                }
+
+                                                b.set(docRef, cleanData, { merge: true });
                                                 await b.commit();
                                             } else {
                                                 const updatedCatalog = catalog.map(item => item.id === editingCourseId ? { ...editingCourseData, id: editingCourseId } as Opportunity : item);

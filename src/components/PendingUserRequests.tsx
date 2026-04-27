@@ -1,12 +1,12 @@
 ﻿import React from 'react';
-import { doc, getDoc, updateDoc, collection, onSnapshot, query } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, onSnapshot, query, increment } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Opportunity } from '../types';
 
 export function PendingUserRequests({ userDoc, catalog, showNotification, mockPending, mockProcessed, onMockAction }: { userDoc: any, catalog: Opportunity[], showNotification: any, mockPending?: any[], mockProcessed?: any[], onMockAction?: (courseId: string, action: 'approve' | 'reject' | 'undo') => void }) {
   const [pending, setPending] = React.useState<any[]>([]);
   const [processed, setProcessed] = React.useState<any[]>([]);
-  
+
   React.useEffect(() => {
     if (userDoc.id.startsWith('mock_')) {
       if (mockPending) setPending(mockPending);
@@ -34,11 +34,7 @@ export function PendingUserRequests({ userDoc, catalog, showNotification, mockPe
       if (!isMock) {
         await updateDoc(doc(db, 'users', userDoc.id, 'courses', courseId), { status: 'planned' });
         const oppRef = doc(db, 'opportunities', opportunityId);
-        const oppData = await getDoc(oppRef);
-        if (oppData.exists()) {
-          const currentEnrolled = oppData.data().enrolled || 0;
-          await updateDoc(oppRef, { enrolled: currentEnrolled + 1 });
-        }
+        await updateDoc(oppRef, { enrolled: increment(1) });
       } else if (onMockAction) { onMockAction(courseId, 'approve'); }
       showNotification(`Approved request for ${userDoc.studentName}`, 'success');
     } catch (e) { handleFirestoreError(e, OperationType.UPDATE, `users/${userDoc.id}/courses/${courseId}`); }
@@ -60,8 +56,8 @@ export function PendingUserRequests({ userDoc, catalog, showNotification, mockPe
         await updateDoc(doc(db, 'users', userDoc.id, 'courses', courseId), { status: 'pending' });
         if (currentStatus === 'planned') {
           const oppRef = doc(db, 'opportunities', opportunityId);
-          const oppData = await getDoc(oppRef);
-          if (oppData.exists()) { const currentEnrolled = oppData.data().enrolled || 0; await updateDoc(oppRef, { enrolled: Math.max(0, currentEnrolled - 1) }); }
+          // Using increment(-1) is atomic. The DB validation or UI logic handles floor constraints.
+          await updateDoc(oppRef, { enrolled: increment(-1) });
         }
       } else if (onMockAction) { onMockAction(courseId, 'undo'); }
       showNotification(`Action undone for ${userDoc.studentName}`, 'success');
@@ -111,7 +107,7 @@ export function PendingUserRequests({ userDoc, catalog, showNotification, mockPe
           </td>
         </tr>
       ))}
-      
+
       {processed.map(p => (
         <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors opacity-75">
           <td className="py-4 px-4 font-bold text-slate-900 flex items-center gap-3">
@@ -144,4 +140,3 @@ export function PendingUserRequests({ userDoc, catalog, showNotification, mockPe
     </>
   );
 }
-

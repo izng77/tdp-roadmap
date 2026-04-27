@@ -61,7 +61,7 @@ service cloud.firestore {
       function isValidOpportunity(data) {
         return data.keys().hasAll(['name', 'tier', 'domain']) &&
                data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
-               data.tier is number &&
+               data.tier is number && data.tier >= 1 && data.tier <= 3 &&
                data.domain is string && data.domain.size() > 0 && data.domain.size() <= 100 &&
                
                // Optional constrained fields
@@ -71,8 +71,8 @@ service cloud.firestore {
                (!data.keys().hasAny(['term']) || (data.term is string && data.term.size() <= 50)) &&
                (!data.keys().hasAny(['week']) || (data.week is string && data.week.size() <= 50)) &&
                (!data.keys().hasAny(['dept']) || (data.dept is string && data.dept.size() <= 100)) &&
-               (!data.keys().hasAny(['enrolled']) || (data.enrolled is number)) &&
-               (!data.keys().hasAny(['capacity']) || (data.capacity is number)) &&
+               (!data.keys().hasAny(['enrolled']) || (data.enrolled is number && data.enrolled >= 0)) &&
+               (!data.keys().hasAny(['capacity']) || (data.capacity is number && data.capacity >= 0)) &&
                (!data.keys().hasAny(['image']) || (data.image is string && data.image.size() <= 1000));
       }
       
@@ -177,9 +177,11 @@ service cloud.firestore {
                       // They can only safely update status or order (in cases where a teacher's course was renamed, the system/admin might push a sync. Using a broader hasOnly covers that, but only Admins should do full syncs)
                       (
                         isAdmin() ||
-                        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'order']) ||
-                        incoming().diff(existing()).affectedKeys().hasOnly(['status']) ||
-                        incoming().diff(existing()).affectedKeys().hasOnly(['order'])
+                        (
+                          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'order', 'completedAt']) &&
+                          // Strict Guardrail: Students cannot self-approve pending requests or bypass rejection
+                          (existing().status != 'pending' || incoming().status == 'pending') && (existing().status != 'rejected' || incoming().status == 'rejected')
+                        )
                       );
                       
         allow delete: if isOwner(userId) && isValidId(courseId);
