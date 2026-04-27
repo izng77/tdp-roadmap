@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, ShieldCheck, X, CheckCircle2, BookOpen, Star, Users, Clock, Heart, ChevronRight, Search, Calendar } from 'lucide-react';
+import { Lock, ShieldCheck, X, CheckCircle2, BookOpen, Star, Users, Clock, Heart, ChevronRight, Search, Calendar, Database } from 'lucide-react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
