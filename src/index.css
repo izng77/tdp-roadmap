@@ -1,87 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fira+Sans:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/symbols-outlined:wght,FILL@100..700,0..1&display=swap');
 @import "tailwindcss";
 
 @theme {
-  /* Core Brand Colors */
   --color-primary: #1A365D;
   --color-secondary: #0151B1;
-  --color-success: #10B981;
-  --color-error: #EF4444;
-  --color-warning: #F59E0B;
+  --color-tertiary: #002617;
   
-  /* Neutral Surface Palette */
-  --color-background: #F8FAFC;
-  --color-surface-bright: #FFFFFF;
+  --color-surface: #F8FAFC;
   --color-surface-dim: #F1F5F9;
-  --color-outline: #64748B;
-  --color-outline-variant: #E2E8F0;
-
-  /* Typography */
-  --font-display: "Outfit", "Inter", sans-serif;
-  --font-body: "Inter", sans-serif;
-
-  /* Spacing & Radii */
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
-  --radius-3xl: 2.5rem;
-}
-
-@layer base {
-  body {
-    @apply bg-background text-primary font-body antialiased;
-  }
-}
-
-@layer components {
-  .pro-card {
-    @apply bg-surface-bright border border-outline-variant rounded-2xl transition-all duration-300;
-  }
+  --color-surface-bright: #FFFFFF;
   
-  .pro-card:hover {
-    @apply border-secondary/20 shadow-xl shadow-slate-200/50;
-  }
+  --color-outline: #94A3B8;
+  --color-outline-variant: #E2E8F0;
+  
+  --color-on-primary: #FFFFFF;
+  --color-on-surface: #0F172A;
+  --color-on-surface-variant: #475569;
 
-  .glass-panel {
-    @apply bg-primary/80 backdrop-blur-xl border border-white/10;
-  }
+  --color-error: #EF4444;
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
 
-  .text-outline {
-    @apply text-outline;
-  }
+  --radius-DEFAULT: 0.75rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 2rem;
+  --radius-full: 9999px;
+
+  --spacing-container-max: 1200px;
+  --spacing-gutter: 24px;
+  
+  --font-sans: "Fira Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Fira Code", monospace;
+
+  /* Semantic Aliases */
+  --font-body-sm: var(--font-sans);
+  --font-body-lg: var(--font-sans);
+  --font-headline-md: var(--font-display);
+  --font-headline-lg: var(--font-display);
+  --font-display-xl: var(--font-display);
+  --font-label-bold: var(--font-sans);
+
+  --transition-fast: 150ms ease-out;
+
+  --transition-base: 200ms ease-out;
+  --transition-slow: 300ms ease-out;
 }
 
-/* Custom Utilities & Animations */
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+
+body {
+  background-color: #F4F7FE;
+  color: #1E293B;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.animate-fadeInUp {
-  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.4s ease-out forwards;
-}
-
-/* Custom Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
-
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
-
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+  background: #CBD5E1;
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
 }
 
-/* High-Density Typography Utilities */
-.tracking-tighter { letter-spacing: -0.05em; }
-.tracking-tight { letter-spacing: -0.025em; }
-.tracking-widest { letter-spacing: 0.1em; }
+.filter-scroll::-webkit-scrollbar {
+  display: none;
+}
+.filter-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.lock-tooltip:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1e293b;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 50;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.glass-panel { 
+  background: rgba(255, 255, 255, 0.7); 
+  backdrop-filter: blur(24px); 
+  -webkit-backdrop-filter: blur(24px); 
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.pro-card {
+  background: var(--color-surface-bright);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: var(--radius-lg);
+  transition: var(--transition-base);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.pro-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.1);
+  border-color: var(--color-secondary);
+}
+
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

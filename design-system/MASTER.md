@@ -1,38 +1,47 @@
 # TDP Roadmap Design System (MASTER)
 
-## 🎨 Visual Identity
-- **Primary**: `#1A365D` (Deep Navy - Trust & Authority)
-- **Secondary**: `#0151B1` (Digital Blue - Interaction & Energy)
-- **Success**: `#10B981` (Emerald - Completion)
-- **Error**: `#EF4444` (Coral - Alerts)
-- **Background**: `#F8FAFC` (Soft Grey)
+## 🎯 North Star
+High-density, deterministic, and professional "Pro-Tool" aesthetic for the SAJC JC1 Talent Development Pilot.
 
-## 🏗️ Core Components
+## 🎨 Color Palette
+- **Primary**: `#1A365D` (Deep Navy - Authority)
+- **Secondary**: `#0151B1` (SAJC Blue - Action)
+- **Success**: `#059669` (Emerald - Completion)
+- **Warning**: `#D97706` (Amber - Pending)
+- **Surface**: `#F8FAFC` (Slate 50 - Background)
+- **Border**: `#E2E8F0` (Slate 200 - Neutral)
 
-### 1. The "Pro-Card"
-Standardized container for all dashboard elements.
-- **Background**: `bg-white`
-- **Border**: `1px solid #E2E8F0`
-- **Radius**: `1.5rem` (rounded-2xl)
-- **Shadow**: `0 4px 20px rgba(0,0,0,0.02)`
-- **Hover**: `border-secondary/20 shadow-xl shadow-slate-200/50`
+## 🔡 Typography
+- **Display**: "Plus Jakarta Sans" (Bold/Extrabold for headers)
+- **Body**: "Fira Sans" (Clean, high-readability for data)
+- **Monospace**: "Fira Code" (Technical/Metadata feel)
 
-### 2. Glassmorphism (Mobile/Overlays)
-Used for floating navigation and high-priority toasts.
-- **Background**: `rgba(26, 54, 93, 0.8)`
-- **Blur**: `blur(20px)`
-- **Border**: `1px solid rgba(255, 255, 255, 0.1)`
-
-### 3. Typography Hierarchy
-- **Display**: `font-black text-4xl tracking-tighter` (Outfit)
-- **Subheaders**: `font-black text-[10px] uppercase tracking-[0.2em] text-outline`
-- **Body**: `font-medium text-base leading-relaxed text-slate-600`
+## 📏 Layout Constants
+- **Max Width**: `1200px` (Desktop Container)
+- **Gutter**: `24px`
+- **Border Radius**: `1rem` (Standard), `2rem` (Pills/Sections)
+- **Navbar Height**: `80px`
 
 ## ✨ Micro-interactions
-- **Scale**: `active:scale-95` on all buttons.
-- **Transitions**: `transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1)`
-- **Entrance**: `animate-fadeInUp` for new modals and toasts.
+- **Transitions**: `200ms ease-out`
+- **Hover**: Subtle lift (`translate-y-[-2px]`) + Shadow ring
+- **Glass**: `backdrop-blur-xl` + `bg-white/80` (Light Mode)
 
-## 📊 Chart Aesthetics
-- **Radar Chart**: stroke: `var(--color-secondary)`, fill: `var(--color-secondary)`, fillOpacity: `0.2`.
-- **Grid Lines**: `var(--color-outline-variant)`.
+## 💎 Component Polishing (The "Glass & Shadow" Layer)
+- **Surface Elevation**: Implement a three-tier elevation system (Base, Panel, Modal) using consistent shadow-ring combinations.
+- **Glassmorphism**: Add `backdrop-blur-xl` to floating headers and navbars for a modern, layered feel.
+- **Surgical Hover States**: Add `cursor-pointer` to all interactive cards and implement a `200ms ease-out` lift effect that avoids layout shifts.
+
+## 📐 Dashboard Density & Symmetry
+- **Student Dashboard**: Re-align the Competency Radar and Mastery Progression blocks for perfect vertical and horizontal symmetry.
+- **Teacher Console**: Standardize the "Catalog Management" list with high-density rows, improving scannability for large course lists.
+- **Navigation**: Refine the Sidebar expansion logic to be smoother and ensure the "Floating Navbar" adheres to the `top-4` spacing rule.
+
+## 💫 Phase 4: Micro-Interactions
+- **Modal Dynamics**: Add a subtle `scale-95` to `scale-100` entry animation for enrollment modals.
+- **Status Feedbacks**: Standardize toast notifications with a glass-blur background and Lucide icon pairings.
+
+##  Anti-Patterns
+- No emojis as UI icons (Use Lucide SVG)
+- No decorative animations (Only feedback/loading)
+- No horizontal scrolling on main content
