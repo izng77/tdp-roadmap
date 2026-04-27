@@ -9,7 +9,9 @@ import {
   deleteDoc,
   writeBatch,
   serverTimestamp,
-  orderBy
+  orderBy,
+  limit,
+  updateDoc
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Opportunity, Profile } from '../types';
@@ -34,25 +36,26 @@ export function useRoadmapData(user: User | null) {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'err' } | null>(null);
+  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [isSuperAdminUser, setIsSuperAdminUser] = useState(false);
 
-  const isAdminUser = useMemo(() => {
-    if (!user) return false;
-    const email = user.email?.toLowerCase() || "";
-    const name = user.displayName?.toUpperCase() || "";
-    
-    // Super Admins are always Admins
-    if (email === 'isaacng77@gmail.com' || email === 'isaac@sajc.edu.sg') return true;
-    
-    // Staff rule: Name ends with " STAFF" and has @sajc.edu.sg email
-    return name.endsWith(' STAFF') && email.endsWith('@sajc.edu.sg');
+  useEffect(() => {
+    if (!user) {
+      setIsAdminUser(false);
+      setIsSuperAdminUser(false);
+      return;
+    }
+
+    // Evaluate Firestore Custom Claims for true admin roles securely from the token
+    user.getIdTokenResult().then((idTokenResult) => {
+      const claims = idTokenResult.claims;
+
+      setIsSuperAdminUser(!!claims.superAdmin);
+      setIsAdminUser(!!claims.admin);
+    }).catch(() => {
+      // Errors handled silently to comply with production logging standards
+    });
   }, [user]);
-
-  const isSuperAdminUser = useMemo(() => {
-    if (!user?.email) return false;
-    const email = user.email.toLowerCase();
-    const superAdmins = ['isaacng77@gmail.com', 'isaac@sajc.edu.sg'];
-    return superAdmins.includes(email);
-  }, [user?.email]);
 
   const showNotification = (msg: string, type: 'success' | 'err' = 'success') => {
     setToast({ msg, type });
@@ -98,17 +101,29 @@ export function useRoadmapData(user: User | null) {
     if (!user) return false;
     const status = (item.tier === 3 || item.isExternal) ? 'pending' : 'planned';
     try {
-      const newCourseRef = doc(collection(db, 'users', user.uid, 'courses'));
-      await setDoc(newCourseRef, {
+      const dataToSet: any = {
         opportunityId: item.id,
         status,
-        order: profile.planned.length,
         addedAt: serverTimestamp(),
         name: item.name,
         tier: item.tier,
         domain: item.domain,
         justification: justification || ""
-      });
+      };
+
+      if (status === 'planned') {
+        // For new 'planned' items, add to the end of the list using fractional indexing.
+        const lastItem = profile.planned.length > 0 ? profile.planned[profile.planned.length - 1] : null;
+        const lastOrder = lastItem ? lastItem.order : 0;
+        dataToSet.order = (lastOrder || 0) + 1000;
+      } else {
+        // Pending items don't need a specific order for drag-and-drop.
+        // We assign 0 to satisfy the 'orderBy' query constraint.
+        dataToSet.order = 0;
+      }
+
+      const newCourseRef = doc(collection(db, 'users', user.uid, 'courses'));
+      await setDoc(newCourseRef, dataToSet);
       showNotification(status === 'pending' ? 'Enrollment request sent for approval!' : `Added "${item.name}" to your roadmap.`);
       return true;
     } catch (err) {
@@ -148,6 +163,7 @@ export function useRoadmapData(user: User | null) {
     const { active, over } = event;
     if (!user || !over || active.id === over.id) return;
 
+    // Optimistic UI update
     const oldIndex = profile.planned.findIndex(item => item.id === active.id);
     const newIndex = profile.planned.findIndex(item => item.id === over.id);
 
@@ -157,12 +173,25 @@ export function useRoadmapData(user: User | null) {
 
     setProfile(prev => ({ ...prev, planned: newPlanned }));
 
-    const batch = writeBatch(db);
-    newPlanned.forEach((item, idx) => {
-      const ref = doc(db, 'users', user.uid, 'courses', item.id);
-      batch.update(ref, { order: idx });
-    });
-    await batch.commit();
+    // --- Remediation: Use Fractional Indexing for a single-write update ---
+
+    // Get the order of the items before and after the new position
+    const prevItem = newPlanned[newIndex - 1];
+    const nextItem = newPlanned[newIndex + 1];
+
+    const prevOrder = prevItem?.order || 0; // If it's the first item, use 0
+    const nextOrder = nextItem?.order || (prevOrder + 1000); // If it's the last, add a buffer
+
+    const newOrder = (prevOrder + nextOrder) / 2;
+
+    // Only update the single moved document
+    try {
+      const ref = doc(db, 'users', user.uid, 'courses', active.id);
+      await updateDoc(ref, { order: newOrder });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}/courses/${active.id}`);
+      showNotification("Failed to reorder item.", "err");
+    }
   };
 
   const handleSeedData = async () => {
@@ -291,7 +320,9 @@ export function useRoadmapData(user: User | null) {
   useEffect(() => {
     if (!user || !isAdminUser || !showAdminPanel) return;
 
-    const adminUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+    // Capped at 100 to prevent massive read spikes.
+    const adminQuery = query(collection(db, 'users'), orderBy('studentName'), limit(100));
+    const adminUnsubscribe = onSnapshot(adminQuery, (snapshot) => {
       const users: any[] = [];
       snapshot.forEach(d => users.push({ id: d.id, ...d.data() }));
       setAllUsers(users);
@@ -310,11 +341,11 @@ export function useRoadmapData(user: User | null) {
     profile.planned.forEach(p => {
       dist[p.domain] = (dist[p.domain] || 0) + 0.5;
     });
-    
+
     const entries = Object.entries(dist);
     const topDomains = entries.sort((a, b) => b[1] - a[1]).slice(0, 5);
     const max = Math.max(...entries.map(e => e[1]), 1);
-    
+
     return { dist, topDomains, max };
   }, [profile.completed, profile.planned]);
 
