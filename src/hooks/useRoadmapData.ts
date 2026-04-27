@@ -65,14 +65,14 @@ export function useRoadmapData(user: User | null) {
   // --- Logic Helpers ---
 
   const isTierLocked = (item: Opportunity) => {
-    if (item.tier === 1) return false;
-    const sameDomainCompleted = profile.completed.filter(c => c.domain === item.domain);
-    const sameDomainPlanned = profile.planned.filter(p => p.domain === item.domain);
+    if (item.tier !== 3) return false;
+    const sameDomainCompleted = profile.completed.filter(c => c.domain === item.domain && c.tier < 3);
+    const sameDomainPlanned = profile.planned.filter(p => p.domain === item.domain && p.tier < 3);
     return sameDomainCompleted.length === 0 && sameDomainPlanned.length === 0;
   };
 
   const getLockReason = (item: Opportunity) => {
-    if (item.tier === 1) return "";
+    if (item.tier !== 3) return "";
     return `Requires at least one Tier 1 or Tier 2 activity in ${item.domain}.`;
   };
 
@@ -99,6 +99,20 @@ export function useRoadmapData(user: User | null) {
 
   const handleAdd = async (item: Opportunity, justification?: string) => {
     if (!user) return false;
+
+    // Idempotency: Prevent adding duplicates
+    const allUserCourses = [...profile.planned, ...profile.pending, ...profile.completed, ...profile.rejected];
+    if (allUserCourses.some(c => c.opportunityId === item.id)) {
+      showNotification("You have already added this opportunity.", "err");
+      return false;
+    }
+
+    // Programmatic progression guardrail enforcement
+    if (isTierLocked(item)) {
+      showNotification(getLockReason(item), "err");
+      return false;
+    }
+
     const status = (item.tier === 3 || item.isExternal) ? 'pending' : 'planned';
     try {
       const dataToSet: any = {
@@ -167,6 +181,7 @@ export function useRoadmapData(user: User | null) {
     const oldIndex = profile.planned.findIndex(item => item.id === active.id);
     const newIndex = profile.planned.findIndex(item => item.id === over.id);
 
+    const originalPlanned = [...profile.planned];
     const newPlanned = [...profile.planned];
     const [movedItem] = newPlanned.splice(oldIndex, 1);
     newPlanned.splice(newIndex, 0, movedItem);
@@ -189,8 +204,10 @@ export function useRoadmapData(user: User | null) {
       const ref = doc(db, 'users', user.uid, 'courses', active.id);
       await updateDoc(ref, { order: newOrder });
     } catch (err) {
+      // Rollback on failure
+      setProfile(prev => ({ ...prev, planned: originalPlanned }));
       handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}/courses/${active.id}`);
-      showNotification("Failed to reorder item.", "err");
+      showNotification("Failed to reorder item. Reverted changes.", "err");
     }
   };
 

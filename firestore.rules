@@ -120,12 +120,18 @@ service cloud.firestore {
         
         function isValidCourse(data) {
            let requiredKeys = data.keys().hasAll(['opportunityId', 'status', 'addedAt', 'name', 'tier', 'domain']);
-           let optKeysValid = data.keys().hasAll(['order']) ? (data.order is number) : true;
-           let sizeValid = data.keys().hasAll(['order']) ? (data.size() == 7) : (data.size() == 6);
+           let hasOrder = data.keys().hasAny(['order']);
+           let hasJustification = data.keys().hasAny(['justification']);
+           let hasCompletedAt = data.keys().hasAny(['completedAt']);
            
-           return requiredKeys && optKeysValid && sizeValid &&
+           let optKeysValid = (!hasOrder || data.order is number) && 
+                              (!hasJustification || data.justification is string) &&
+                              (!hasCompletedAt || data.completedAt is timestamp);
+           let expectedSize = 6 + (hasOrder ? 1 : 0) + (hasJustification ? 1 : 0) + (hasCompletedAt ? 1 : 0);
+           
+           return requiredKeys && optKeysValid && (data.size() == expectedSize) &&
                   data.opportunityId is string && data.opportunityId.size() <= 128 &&
-                  data.status in ['planned', 'completed'] &&
+                  data.status in ['planned', 'completed', 'pending', 'rejected'] &&
                   data.addedAt == request.time &&
                   data.name is string && data.name.size() <= 200 && data.name.size() > 0 &&
                   data.tier is number &&
@@ -134,12 +140,18 @@ service cloud.firestore {
         
         function isValidCourseUpdate(data) {
            let requiredKeys = data.keys().hasAll(['opportunityId', 'status', 'addedAt', 'name', 'tier', 'domain']);
-           let optKeysValid = data.keys().hasAll(['order']) ? (data.order is number) : true;
-           let sizeValid = data.keys().hasAll(['order']) ? (data.size() == 7) : (data.size() == 6);
+           let hasOrder = data.keys().hasAny(['order']);
+           let hasJustification = data.keys().hasAny(['justification']);
+           let hasCompletedAt = data.keys().hasAny(['completedAt']);
            
-           return requiredKeys && optKeysValid && sizeValid &&
+           let optKeysValid = (!hasOrder || data.order is number) && 
+                              (!hasJustification || data.justification is string) &&
+                              (!hasCompletedAt || data.completedAt is timestamp);
+           let expectedSize = 6 + (hasOrder ? 1 : 0) + (hasJustification ? 1 : 0) + (hasCompletedAt ? 1 : 0);
+           
+           return requiredKeys && optKeysValid && (data.size() == expectedSize) &&
                   data.opportunityId is string && data.opportunityId.size() <= 128 &&
-                  data.status in ['planned', 'completed'] &&
+                  data.status in ['planned', 'completed', 'pending', 'rejected'] &&
                   data.addedAt == existing().addedAt &&
                   data.name is string && data.name.size() <= 200 && data.name.size() > 0 &&
                   data.tier is number &&
