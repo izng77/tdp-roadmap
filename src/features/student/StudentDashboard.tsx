@@ -146,7 +146,7 @@ export function StudentDashboard({
                     {/* Modals */}
                     {selectedItem && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn">
-                            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl relative">
+                            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl relative max-h-[85vh] overflow-y-auto overscroll-contain">
                                 <button onClick={() => { setSelectedItem(null); setDirectEnrollId(null); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
                                     <X className="w-5 h-5" />
                                 </button>
@@ -246,7 +246,7 @@ export function StudentDashboard({
 
                     {confirmCompleteItem && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn">
-                            <div className="bg-white rounded-3xl p-6 md:p-8 max-sm w-full shadow-2xl relative">
+                            <div className="bg-white rounded-3xl p-6 md:p-8 max-sm w-full shadow-2xl relative max-h-[85vh] overflow-y-auto overscroll-contain">
                                 <button onClick={() => setConfirmCompleteItem(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
                                     <X className="w-5 h-5" />
                                 </button>

@@ -12,9 +12,9 @@ export function DesktopTopBar({ profile, focusMode, setFocusMode }: { profile: P
         <div className="flex-1 max-w-xl">
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-outline transition-colors group-focus-within:text-secondary" />
-            <input 
-              type="text" 
-              placeholder="Search courses, peers..." 
+            <input
+              type="text"
+              placeholder="Search courses, peers..."
               className="w-full bg-white/50 border border-outline-variant rounded-full py-2.5 pl-11 pr-4 text-sm focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/20 transition-all shadow-sm focus:bg-white"
             />
           </div>
@@ -32,7 +32,7 @@ export function DesktopTopBar({ profile, focusMode, setFocusMode }: { profile: P
             )}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+              <circle cx="12" cy="12" r="3" /><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
             </svg>
             {focusMode ? 'Focus ON' : 'Focus Mode'}
           </button>
@@ -57,11 +57,11 @@ export function TopNavBar({ profile, activeTab, setActiveTab, isAdminUser, showA
         </div>
         <div className="flex items-center gap-2">
           {isAdminUser && (
-            <button 
+            <button
               onClick={() => {
                 setShowAdminPanel(!showAdminPanel);
                 setActiveTab(0);
-              }} 
+              }}
               className={cn("p-2 rounded-xl transition-all active:scale-90 shadow-sm", showAdminPanel ? "bg-secondary text-white" : "bg-secondary/10 text-secondary")}
               title="Toggle Teacher View"
             >
@@ -90,7 +90,7 @@ export function SideNavBar({ profile, activeTab, setActiveTab, isAdminUser, show
     { id: 'nav-student-achievements', icon: Star, label: 'Achievements' },
     { id: 'nav-student-settings', icon: Settings, label: 'Settings' }
   ];
-  
+
   const tabs = showAdminPanel ? adminTabs : studentTabs;
 
   return (
@@ -100,8 +100,8 @@ export function SideNavBar({ profile, activeTab, setActiveTab, isAdminUser, show
           {isAdminUser ? 'A' : profile?.studentName?.charAt(0) || 'U'}
         </div>
         <div className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 px-2">
-            <h1 className="text-2xl font-black text-primary tracking-tighter font-display leading-none">SAJC</h1>
-            <p className="text-[10px] text-outline font-bold tracking-[0.2em] uppercase mt-1.5">{showAdminPanel ? 'Teacher Console' : 'TD Roadmap'}</p>
+          <h1 className="text-2xl font-black text-primary tracking-tighter font-display leading-none">SAJC</h1>
+          <p className="text-[10px] text-outline font-bold tracking-[0.2em] uppercase mt-1.5">{showAdminPanel ? 'Teacher Console' : 'TD Roadmap'}</p>
         </div>
       </button>
       <div className="flex-1 flex flex-col gap-2" role="menu">
@@ -145,21 +145,21 @@ export function BottomNavBar({ activeTab, setActiveTab, showAdminPanel }: any) {
   const tabs = showAdminPanel ? adminTabs : studentTabs;
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 p-6 pointer-events-none">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pt-4 pointer-events-none" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
       <div className="glass-panel w-full mx-auto max-w-sm rounded-2xl flex justify-between items-center px-2 py-1.5 pointer-events-auto shadow-2xl border border-white/20">
         {tabs.map((item, i) => (
-          <button 
+          <button
             key={i}
             onClick={() => setActiveTab(i)}
             className={cn(
               "flex flex-col items-center justify-center min-w-[64px] p-2.5 rounded-xl transition-all active:scale-90",
-              activeTab === i 
-                ? "bg-primary text-white shadow-lg" 
-                : "text-on-surface-variant/60 hover:text-primary hover:bg-primary/5"
+              activeTab === i
+                ? "bg-primary text-white shadow-lg"
+                : "text-on-surface-variant/70 hover:text-primary hover:bg-primary/5"
             )}
           >
-            <item.icon className="w-5 h-5 mb-1" strokeWidth={activeTab === i ? 2.5 : 2} />
-            <span className="font-display text-[8px] font-black tracking-widest uppercase leading-none opacity-80">
+            <item.icon className="w-4 h-4 md:w-5 md:h-5 mb-1.5" strokeWidth={activeTab === i ? 2.5 : 2} />
+            <span className="font-display text-[7.5px] md:text-[8px] font-black tracking-[0.15em] uppercase leading-none opacity-80">
               {item.label.split(' ')[0]}
             </span>
           </button>

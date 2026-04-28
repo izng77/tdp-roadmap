@@ -51,23 +51,23 @@ export function CatalogTab({
             </section>
 
             <section className="mb-section-gap px-margin-mobile md:px-0">
-                <div className="flex flex-wrap items-center gap-3 pb-4 pt-2 relative z-10">
-                    <button onClick={() => setDomainFilters([])} className={cn("whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-semibold transition-all border shadow-sm", domainFilters.length === 0 ? "bg-primary text-on-primary border-primary shadow-md shadow-primary/20 scale-105" : "bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:bg-surface-container-low hover:text-on-surface")}>
+                <div className="flex overflow-x-auto md:flex-wrap items-center gap-3 pb-4 pt-2 relative z-10 scrollbar-hide -mx-margin-mobile px-margin-mobile md:mx-0 md:px-0">
+                    <button onClick={() => setDomainFilters([])} className={cn("whitespace-nowrap shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all border shadow-sm", domainFilters.length === 0 ? "bg-primary text-on-primary border-primary shadow-md shadow-primary/20 scale-105" : "bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:bg-surface-container-low hover:text-on-surface")}>
                         All Domains
                     </button>
-                    <button onClick={() => setShowBookmarksOnly(!showBookmarksOnly)} className={cn("whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-semibold transition-all border shadow-sm flex items-center gap-2", showBookmarksOnly ? "bg-red-50 text-red-600 border-red-200 shadow-md shadow-red-500/10" : "bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:bg-surface-container-low")}>
+                    <button onClick={() => setShowBookmarksOnly(!showBookmarksOnly)} className={cn("whitespace-nowrap shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all border shadow-sm flex items-center gap-2", showBookmarksOnly ? "bg-red-50 text-red-600 border-red-200 shadow-md shadow-red-500/10" : "bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:bg-surface-container-low")}>
                         <Heart className={cn("w-4 h-4", showBookmarksOnly ? "fill-current" : "")} />
                         {showBookmarksOnly ? "Show All" : "Bookmarked Only"}
                     </button>
                     {Array.from(new Set(catalog.map(item => (item.domain || "General").trim()))).sort().map(d => {
                         const isActive = domainFilters.includes(d.toLowerCase());
                         return (
-                            <button key={d} onClick={() => { const lowerD = d.toLowerCase(); if (isActive) { setDomainFilters(domainFilters.filter(filter => filter !== lowerD)); } else { setDomainFilters([...domainFilters, lowerD]); } }} className={cn("whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-semibold transition-all border shadow-sm", isActive ? "bg-primary text-on-primary border-primary shadow-md shadow-primary/20 scale-105" : "bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:bg-surface-container-low hover:text-on-surface")}>
+                            <button key={d} onClick={() => { const lowerD = d.toLowerCase(); if (isActive) { setDomainFilters(domainFilters.filter(filter => filter !== lowerD)); } else { setDomainFilters([...domainFilters, lowerD]); } }} className={cn("whitespace-nowrap shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all border shadow-sm", isActive ? "bg-primary text-on-primary border-primary shadow-md shadow-primary/20 scale-105" : "bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:bg-surface-container-low hover:text-on-surface")}>
                                 {d}
                             </button>
                         );
                     })}
-                    <div className="ml-auto flex items-center gap-2 pl-4">
+                    <div className="md:ml-auto flex items-center gap-2 md:pl-4 shrink-0">
                         <button onClick={() => setShowFilters(!showFilters)} className={cn("px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 shrink-0 shadow-sm", showFilters ? "bg-primary text-white" : "bg-surface-dim text-primary border border-outline-variant hover:bg-surface-bright")}>
                             <Database className="w-4 h-4" /> {showFilters ? 'Hide Advanced' : 'Show Advanced'}
                         </button>

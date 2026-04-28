@@ -74,32 +74,32 @@ export function DashboardTab({
     };
 
     return (
-        <div className={cn("flex-1 overflow-y-auto w-full px-4 md:px-0 py-8 md:py-12 no-scrollbar", activeTab === 0 ? "block" : "hidden")}>
-            <section className="bg-primary text-white rounded-xl p-8 md:px-12 md:py-10 mb-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-center z-10 shadow-2xl shadow-primary/20 border border-white/5">
+        <div className={cn("flex-1 overflow-y-auto w-full px-4 md:px-0 py-6 md:py-12 no-scrollbar", activeTab === 0 ? "block" : "hidden")}>
+            <section className="bg-primary text-white rounded-xl p-6 md:px-12 md:py-10 mb-6 md:mb-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-center z-10 shadow-2xl shadow-primary/20 border border-white/5">
                 <div className="absolute right-0 top-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none"></div>
 
                 <div className="relative z-10 w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-10">
                     <div className="max-w-xl">
-                        <h1 className="font-display font-black text-3xl md:text-5xl mb-4 tracking-tighter">
+                        <h1 className="font-display font-black text-2xl md:text-5xl mb-3 md:mb-4 tracking-tighter">
                             Welcome back, {profile.studentName.split(' ')[0]}.
                         </h1>
-                        <p className="text-base md:text-lg text-blue-100/80 font-medium leading-relaxed max-w-lg">
+                        <p className="text-sm md:text-lg text-blue-100/80 font-medium leading-relaxed max-w-lg">
                             You have <span className="text-white font-bold">{profile.planned.length} upcoming activities</span> and a new achievement badge waiting to be claimed.
                         </p>
                     </div>
 
-                    <div className="flex items-center justify-between w-full md:w-auto bg-white/5 p-6 md:px-10 md:py-8 rounded-2xl border border-white/10 backdrop-blur-md shadow-2xl shrink-0">
+                    <div className="flex items-center justify-between w-full md:w-auto bg-white/5 p-5 md:px-10 md:py-8 rounded-2xl border border-white/10 backdrop-blur-md shadow-2xl shrink-0">
                         <div className="flex gap-10 mr-10">
                             <div>
-                                <div className="text-[10px] font-black text-blue-300 tracking-[0.2em] mb-2 uppercase opacity-70">Completed</div>
+                                <div className="text-[9px] md:text-[10px] font-black text-blue-300 tracking-[0.2em] mb-2 uppercase opacity-70">Completed</div>
                                 <div className="text-3xl md:text-4xl font-display font-black">{profile.completed.length}</div>
                             </div>
                             <div>
-                                <div className="text-[10px] font-black text-blue-300 tracking-[0.2em] mb-2 uppercase opacity-70">Planned</div>
+                                <div className="text-[9px] md:text-[10px] font-black text-blue-300 tracking-[0.2em] mb-2 uppercase opacity-70">Planned</div>
                                 <div className="text-3xl md:text-4xl font-display font-black">{profile.planned.length}</div>
                             </div>
                         </div>
-                        <button onClick={() => setActiveTab(2)} className="bg-white text-primary hover:bg-blue-50 px-8 py-4 rounded-xl text-xs font-black uppercase tracking-widest shadow-xl transition-all active:scale-95">
+                        <button onClick={() => setActiveTab(2)} className="bg-white text-primary hover:bg-blue-50 px-6 md:px-8 py-3 md:py-4 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest shadow-xl transition-all active:scale-95">
                             View Schedule
                         </button>
                     </div>
@@ -136,12 +136,12 @@ export function DashboardTab({
                                 Explorer <ChevronRight className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="flex-1 flex flex-col items-center justify-center w-full min-h-[300px]">
-                            <div className="w-full h-[300px] relative z-10">
+                        <div className="flex-1 flex flex-col items-center justify-center w-full min-h-[250px] md:min-h-[300px]">
+                            <div className="w-full h-[250px] md:h-[300px] relative z-10">
                                 <PolarArea data={polarData} options={polarOptions} />
                             </div>
                         </div>
-                        <div className="flex gap-3 justify-center mt-8 pt-6 border-t border-outline-variant/30">
+                        <div className="flex gap-3 justify-center mt-6 md:mt-8 pt-6 border-t border-outline-variant/30">
                             {topDomain && (topDomain.Completed > 2 || (topDomain.Planned || 0) > 4) ? (
                                 <>
                                     <span className="bg-secondary/10 text-secondary text-[10px] font-black px-4 py-2 rounded-lg border border-secondary/20 flex items-center shadow-sm uppercase tracking-widest">
@@ -221,11 +221,11 @@ export function DashboardTab({
                         <button className="text-sm font-bold text-[#0151B1] hover:text-blue-700 transition-colors" onClick={() => setActiveTab(1)}>View All</button>
                     </div>
 
-                    <div className="flex overflow-x-auto gap-4 pb-4 -mx-margin-mobile px-margin-mobile md:mx-0 md:px-0 hide-scrollbar">
+                    <div className="flex overflow-x-auto gap-4 pb-4 -mx-margin-mobile px-margin-mobile md:mx-0 md:px-0 scrollbar-hide snap-x snap-mandatory">
                         {filteredCatalog.slice(0, 4).map((item, idx) => {
                             const isLocked = isTierLocked(item);
                             return (
-                                <div key={item.id} onClick={() => setSelectedItem(item)} className="min-w-[280px] w-[280px] border border-slate-200 bg-white rounded-3xl flex flex-col overflow-hidden cursor-pointer hover:border-blue-300 hover:shadow-md transition-all shrink-0">
+                                <div key={item.id} onClick={() => setSelectedItem(item)} className="min-w-[280px] w-[280px] border border-slate-200 bg-white rounded-3xl flex flex-col overflow-hidden cursor-pointer hover:border-blue-300 hover:shadow-md transition-all shrink-0 snap-start">
                                     <div className="h-[140px] bg-slate-900 relative">
                                         {item.image ? (
                                             <img src={item.image} alt={item.name} className="w-full h-full object-cover opacity-80" />

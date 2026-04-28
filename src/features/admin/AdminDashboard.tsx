@@ -68,7 +68,7 @@ export function AdminDashboard({
                     {/* Overview Tab */}
                     <div className={cn("flex-col gap-6", activeTab === 0 ? "flex animate-fadeIn" : "hidden")}>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="pro-card p-8 flex items-center gap-6 bg-white">
+                            <div className="pro-card p-6 md:p-8 flex items-center gap-4 md:gap-6 bg-white">
                                 <div className="w-14 h-14 rounded-2xl bg-primary/5 text-primary flex items-center justify-center shrink-0 border border-primary/10">
                                     <Users className="w-7 h-7" />
                                 </div>
@@ -77,7 +77,7 @@ export function AdminDashboard({
                                     <p className="font-display text-4xl font-black text-primary tabular-nums">{users.length}</p>
                                 </div>
                             </div>
-                            <div className="pro-card p-8 flex items-center gap-6 bg-white">
+                            <div className="pro-card p-6 md:p-8 flex items-center gap-4 md:gap-6 bg-white">
                                 <div className="w-14 h-14 rounded-2xl bg-secondary/5 text-secondary flex items-center justify-center shrink-0 border border-secondary/10">
                                     <BookOpen className="w-7 h-7" />
                                 </div>
@@ -86,7 +86,7 @@ export function AdminDashboard({
                                     <p className="font-display text-4xl font-black text-primary tabular-nums">{catalog.length}</p>
                                 </div>
                             </div>
-                            <div className="pro-card p-8 flex items-center gap-6 bg-white">
+                            <div className="pro-card p-6 md:p-8 flex items-center gap-4 md:gap-6 bg-white">
                                 <div className="w-14 h-14 rounded-2xl bg-success/5 text-success flex items-center justify-center shrink-0 border border-success/10">
                                     <TrendingUp className="w-7 h-7" />
                                 </div>
@@ -119,7 +119,7 @@ export function AdminDashboard({
                     </div>
 
                     <div className={cn(activeTab === 1 ? "block animate-fadeIn" : "hidden")}>
-                        <div className="pro-card p-10 bg-white">
+                        <div className="pro-card p-6 md:p-10 bg-white">
                             <h2 className="font-display font-black text-2xl text-primary tracking-tight mb-4">Catalog Management</h2>
                             <p className="text-sm font-medium text-on-surface-variant opacity-60 mb-10 max-w-2xl">
                                 Orchestrate the talent development catalog. Synchronize with Google Sheets or manage individual course properties.
@@ -284,7 +284,7 @@ export function AdminDashboard({
                     {/* Additional Tabs (Students, Requests, Analytics, Settings) */}
                     {/* NOTE: Extracted as-is from App.tsx */}
                     <div className={cn("flex flex-col animate-fadeIn", activeTab === 2 ? "flex" : "hidden")}>
-                        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-200">
+                        <div className="bg-white rounded-2xl md:rounded-[2rem] p-6 md:p-8 shadow-sm border border-slate-200">
                             <h2 className="font-headline-lg text-headline-lg font-display font-bold text-slate-900 mb-4">Student Directory</h2>
                             <p className="text-slate-500 mb-6">Manage student profiles and view overall progress records.</p>
                             <div className="h-[500px] overflow-y-auto w-full custom-scrollbar">
@@ -313,7 +313,7 @@ export function AdminDashboard({
 
                     {/* Pending Requests Tab */}
                     <div className={cn("flex flex-col animate-fadeIn", activeTab === 3 ? "flex" : "hidden")}>
-                        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-200">
+                        <div className="bg-white rounded-2xl md:rounded-[2rem] p-6 md:p-8 shadow-sm border border-slate-200">
                             <h2 className="font-headline-lg text-headline-lg font-display font-bold text-slate-900 mb-4">Enrollment Requests</h2>
                             <PendingUserRequests catalog={catalog} showNotification={showNotification} />
                         </div>
@@ -321,7 +321,7 @@ export function AdminDashboard({
 
                     {/* Analytics & Settings Tabs */}
                     <div className={cn("flex flex-col animate-fadeIn", activeTab === 4 ? "flex" : "hidden")}>
-                        <div className="bg-white rounded-[2rem] p-8 border border-slate-200">
+                        <div className="bg-white rounded-2xl md:rounded-[2rem] p-6 md:p-8 border border-slate-200">
                             <h2 className="font-display font-bold text-slate-900 mb-4">School Analytics</h2>
                             <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 h-64 flex items-center justify-center">
                                 <TrendingUp className="w-12 h-12 text-slate-300 mb-4" />
@@ -331,7 +331,7 @@ export function AdminDashboard({
                     </div>
 
                     <div className={cn("flex flex-col animate-fadeIn", activeTab === 5 ? "flex" : "hidden")}>
-                        <div className="bg-white rounded-[2rem] p-8 border border-slate-200">
+                        <div className="bg-white rounded-2xl md:rounded-[2rem] p-6 md:p-8 border border-slate-200">
                             <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
                                 <div>
                                     <div className="font-bold text-slate-900">Sign Out</div>
