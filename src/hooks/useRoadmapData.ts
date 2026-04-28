@@ -12,7 +12,9 @@ import {
   orderBy,
   limit,
   updateDoc,
-  increment
+  increment,
+  collectionGroup,
+  getDocs
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Opportunity, Profile } from '../types';
@@ -67,18 +69,20 @@ export function useRoadmapData(user: User | null) {
 
   const isTierLocked = (item: Opportunity) => {
     if (item.tier !== 3) return false;
-    const sameDomainCompleted = profile.completed.filter(c => c.domain === item.domain && c.tier < 3);
-    const sameDomainPlanned = profile.planned.filter(p => p.domain === item.domain && p.tier < 3);
+    const targetDomain = (item.domain || "").trim().toLowerCase();
+    const sameDomainCompleted = profile.completed.filter(c => (c.domain || "").trim().toLowerCase() === targetDomain && c.tier < 3);
+    const sameDomainPlanned = profile.planned.filter(p => (p.domain || "").trim().toLowerCase() === targetDomain && p.tier < 3);
     return sameDomainCompleted.length === 0 && sameDomainPlanned.length === 0;
   };
 
   const getLockReason = (item: Opportunity) => {
     if (item.tier !== 3) return "";
-    return `Requires at least one Tier 1 or Tier 2 activity in ${item.domain}.`;
+    return `Requires at least one Tier 1 or Tier 2 activity in ${item.domain || "this domain"}.`;
   };
 
   const getUnlockSuggestions = (item: Opportunity) => {
-    return catalog.filter(o => o.domain === item.domain && o.tier < item.tier).slice(0, 2);
+    const targetDomain = (item.domain || "").trim().toLowerCase();
+    return catalog.filter(o => (o.domain || "").trim().toLowerCase() === targetDomain && o.tier < item.tier).slice(0, 2);
   };
 
   // --- Handlers ---
@@ -139,14 +143,7 @@ export function useRoadmapData(user: User | null) {
 
       const newCourseRef = doc(collection(db, 'users', user.uid, 'courses'));
       await setDoc(newCourseRef, dataToSet);
-      
-      // Increment catalog count for Tier 1/2 items that go straight to 'planned'
-      if (status === 'planned') {
-        await updateDoc(doc(db, 'opportunities', item.id), {
-          enrolled: increment(1)
-        });
-      }
-      
+
       showNotification(status === 'pending' ? 'Enrollment request sent for approval!' : `Added "${item.name}" to your roadmap.`);
       return true;
     } catch (err) {
@@ -157,22 +154,21 @@ export function useRoadmapData(user: User | null) {
 
   const handleRemoveItem = async (docId: string) => {
     if (!user) return false;
-    
-    // Find item metadata before deletion to update catalog counts
-    const allCourses = [...profile.planned, ...profile.pending, ...profile.completed, ...profile.rejected];
-    const itemToRemove = allCourses.find(c => c.id === docId);
 
     try {
-      await deleteDoc(doc(db, 'users', user.uid, 'courses', docId));
-      
-      // Decrement catalog count if the item was already approved/completed
-      if (itemToRemove && (itemToRemove.status === 'planned' || itemToRemove.status === 'completed')) {
-        await updateDoc(doc(db, 'opportunities', itemToRemove.opportunityId), {
-          enrolled: increment(-1)
-        });
-      }
+      const courseRef = doc(db, 'users', user.uid, 'courses', docId);
+      const allCourses = [...profile.planned, ...profile.pending, ...profile.completed, ...profile.rejected];
+      const item = allCourses.find(c => c.id === docId);
 
-      showNotification("Item removed from your roadmap.");
+      if (item && (item.status === 'planned' || item.status === 'completed')) {
+        // If it was already approved/planned, we need admin to approve the drop to sync capacity
+        await updateDoc(courseRef, { status: 'drop_pending' });
+        showNotification("Drop request sent to admin for capacity syncing.");
+      } else {
+        // If it's just a pending request or rejected, we can delete safely
+        await deleteDoc(courseRef);
+        showNotification("Item removed from your roadmap.");
+      }
       return true;
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `users/${user.uid}/courses/${docId}`);
@@ -274,6 +270,48 @@ export function useRoadmapData(user: User | null) {
     showNotification(`Imported ${data.length} opportunities!`, "success");
   };
 
+  const handleSyncCapacities = async () => {
+    if (!user || !isAdminUser) return false;
+
+    try {
+      const coursesQuery = query(collectionGroup(db, 'courses'));
+      const snapshot = await getDocs(coursesQuery);
+
+      const capacities: Record<string, number> = {};
+
+      snapshot.forEach(d => {
+        const data = d.data();
+        if (data.status === 'planned' || data.status === 'completed') {
+          capacities[data.opportunityId] = (capacities[data.opportunityId] || 0) + 1;
+        }
+      });
+
+      const batch = writeBatch(db);
+      let changesCount = 0;
+
+      catalog.forEach(item => {
+        const actualCount = capacities[item.id] || 0;
+        if (item.enrolled !== actualCount) {
+          const ref = doc(db, 'opportunities', item.id);
+          batch.update(ref, { enrolled: actualCount });
+          changesCount++;
+        }
+      });
+
+      if (changesCount > 0) {
+        await batch.commit();
+        showNotification(`Capacities synced! Updated ${changesCount} courses.`, "success");
+      } else {
+        showNotification("All capacities are already up to date.", "success");
+      }
+      return true;
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'opportunities');
+      showNotification("Failed to sync capacities.", "err");
+      return false;
+    }
+  };
+
   // --- Sync Effects ---
 
   useEffect(() => {
@@ -326,7 +364,7 @@ export function useRoadmapData(user: User | null) {
         const data = d.data();
         const item = { id: d.id, ...data };
         if (data.status === 'planned') planned.push(item);
-        else if (data.status === 'pending') pending.push(item);
+        else if (data.status === 'pending' || data.status === 'drop_pending') pending.push(item);
         else if (data.status === 'completed') completed.push(item);
         else if (data.status === 'rejected') rejected.push(item);
       });
@@ -374,25 +412,40 @@ export function useRoadmapData(user: User | null) {
 
   const domainDistribution = useMemo(() => {
     const dist: Record<string, number> = {};
+    const displayNames: Record<string, string> = {};
+
     profile.completed.forEach(c => {
-      dist[c.domain] = (dist[c.domain] || 0) + 1;
+      const domain = c.domain || "Uncategorized";
+      const norm = domain.trim().toLowerCase();
+      displayNames[norm] = domain;
+      dist[norm] = (dist[norm] || 0) + 1;
     });
     profile.planned.forEach(p => {
-      dist[p.domain] = (dist[p.domain] || 0) + 0.5;
+      const domain = p.domain || "Uncategorized";
+      const norm = domain.trim().toLowerCase();
+      displayNames[norm] = domain;
+      dist[norm] = (dist[norm] || 0) + 0.5;
     });
 
-    const entries = Object.entries(dist);
+    // Map back to display names for UI
+    const entries = Object.entries(dist).map(([norm, val]) => [displayNames[norm] || norm, val] as [string, number]);
     const topDomains = entries.sort((a, b) => b[1] - a[1]).slice(0, 5);
     const max = Math.max(...entries.map(e => e[1]), 1);
 
-    return { dist, topDomains, max };
+    return { dist, topDomains, max, displayNames };
   }, [profile.completed, profile.planned]);
 
   const chartData = useMemo(() => {
-    const domains = Array.from(new Set(catalog.map(o => o.domain))).filter(Boolean);
-    return domains.map(d => ({
-      subject: d,
-      A: domainDistribution.dist[d] || 0,
+    const uniqueDomains = new Map<string, string>();
+    catalog.forEach(o => {
+      if (o.domain) {
+        uniqueDomains.set(o.domain.trim().toLowerCase(), o.domain);
+      }
+    });
+
+    return Array.from(uniqueDomains.entries()).map(([norm, display]) => ({
+      subject: display,
+      Completed: domainDistribution.dist[norm] || 0,
       fullMark: 5
     }));
   }, [catalog, domainDistribution]);
@@ -406,7 +459,7 @@ export function useRoadmapData(user: User | null) {
     isAdminUser, isSuperAdminUser, showAdminPanel, setShowAdminPanel,
     users: allUsers, activeTab, setActiveTab, toast,
     showNotification, handleToggleBookmark, handleSeedData, handleFileUpload,
-    handleCompleteCourse, handleAdd, handleDragEnd, handleRemoveItem,
+    handleCompleteCourse, handleAdd, handleDragEnd, handleRemoveItem, handleSyncCapacities,
     isTierLocked, getLockReason, getUnlockSuggestions,
     domainDistribution, chartData, topDomain,
     filterOptions: { domains: Array.from(new Set(catalog.map(o => o.domain))).sort() }

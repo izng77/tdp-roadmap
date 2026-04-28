@@ -51,6 +51,11 @@ service cloud.firestore {
       // We block UI-level admin modifications; manage via Firebase Console or SuperAdmin
       allow write: if false; 
     }
+
+    // Enable cross-user enrollment counting for Admin Sync function
+    match /{path=**}/courses/{courseId} {
+      allow read: if isAdmin();
+    }
     
     // Global Catalog
     match /opportunities/{opportunityId} {
@@ -83,7 +88,7 @@ service cloud.firestore {
                       isSuperAdmin() || 
                       (
                         isAdmin() && 
-                        ('ownerEmails' in existing() == false || existing().ownerEmails == null || request.auth.token.email in existing().ownerEmails) &&
+                        (!('ownerEmails' in existing()) || existing().ownerEmails == null || request.auth.token.email in existing().ownerEmails) &&
                         // Strict limitation of what standard admins/course owners can edit (no backdoor additions)
                         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'tier', 'domain', 'description', 'level', 'term', 'week', 'dept', 'enrolled', 'capacity', 'image', 'ownerEmails'])
                       )
@@ -131,7 +136,7 @@ service cloud.firestore {
            
            return requiredKeys && optKeysValid && (data.size() == expectedSize) &&
                   data.opportunityId is string && data.opportunityId.size() <= 128 &&
-                  data.status in ['planned', 'completed', 'pending', 'rejected'] &&
+                  data.status in ['planned', 'completed', 'pending', 'rejected', 'drop_pending'] &&
                   data.addedAt == request.time &&
                   data.name is string && data.name.size() <= 200 && data.name.size() > 0 &&
                   data.tier is number &&
@@ -151,7 +156,7 @@ service cloud.firestore {
            
            return requiredKeys && optKeysValid && (data.size() == expectedSize) &&
                   data.opportunityId is string && data.opportunityId.size() <= 128 &&
-                  data.status in ['planned', 'completed', 'pending', 'rejected'] &&
+                  data.status in ['planned', 'completed', 'pending', 'rejected', 'drop_pending'] &&
                   data.addedAt == existing().addedAt &&
                   data.name is string && data.name.size() <= 200 && data.name.size() > 0 &&
                   data.tier is number &&
@@ -184,7 +189,11 @@ service cloud.firestore {
                         )
                       );
                       
-        allow delete: if isOwner(userId) && isValidId(courseId);
+        // Strict Guardrail: Students cannot hard-delete an approved course; it must go through drop_pending
+        allow delete: if isValidId(courseId) && (
+                        isAdmin() || 
+                        (isOwner(userId) && (existing().status == 'pending' || existing().status == 'rejected'))
+                      );
       }
     }
   }

@@ -25,6 +25,7 @@ interface AdminDashboardProps {
     showNotification: (msg: string, type?: 'success' | 'err') => void;
     handleSeedData: () => Promise<void>;
     handleFileUpload: (e: any) => Promise<void>;
+    handleSyncCapacities: () => Promise<void>;
     domainDistribution: any;
     focusMode: boolean;
     setFocusMode: React.Dispatch<React.SetStateAction<boolean>>;
@@ -34,7 +35,7 @@ export function AdminDashboard({
     user, profile, setProfile, catalog, setCatalog, users,
     activeTab, setActiveTab, isAdminUser, isSuperAdminUser,
     showAdminPanel, setShowAdminPanel, toast, showNotification,
-    handleSeedData, handleFileUpload, domainDistribution,
+    handleSeedData, handleFileUpload, handleSyncCapacities, domainDistribution,
     focusMode, setFocusMode
 }: AdminDashboardProps) {
     // Local Admin State (Moved from App.tsx)
@@ -160,31 +161,7 @@ export function AdminDashboard({
 
                                         <button
                                             onClick={async () => {
-                                                try {
-                                                    showNotification("Recalculating enrollments from user data...", "success");
-                                                    const usersSnapshot = await getDocs(collection(db, 'users'));
-                                                    const courseCounts: Record<string, number> = {};
-                                                    for (const userDoc of usersSnapshot.docs) {
-                                                        const coursesSnap = await getDocs(collection(db, 'users', userDoc.id, 'courses'));
-                                                        coursesSnap.forEach(c => {
-                                                            if (c.data().status === 'planned' || c.data().status === 'completed') {
-                                                                const oppId = c.data().opportunityId;
-                                                                courseCounts[oppId] = (courseCounts[oppId] || 0) + 1;
-                                                            }
-                                                        });
-                                                    }
-                                                    let b = writeBatch(db);
-                                                    let count = 0;
-                                                    for (const item of catalog) {
-                                                        b.update(doc(db, 'opportunities', item.id), { enrolled: courseCounts[item.id] || 0 });
-                                                        count++;
-                                                        if (count === 400) { await b.commit(); b = writeBatch(db); count = 0; }
-                                                    }
-                                                    if (count > 0) await b.commit();
-                                                    showNotification('Enrollments recalculated successfully based on actual user data.', 'success');
-                                                } catch (e) {
-                                                    handleFirestoreError(e, OperationType.UPDATE, 'opportunities');
-                                                }
+                                                await handleSyncCapacities();
                                             }}
                                             className="px-6 py-3 bg-error/5 text-error border border-error/20 text-[10px] font-black rounded-xl hover:bg-error/10 transition-all uppercase tracking-[0.2em] active:scale-95"
                                         >

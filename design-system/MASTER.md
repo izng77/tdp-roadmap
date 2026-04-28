@@ -41,7 +41,7 @@ High-density, deterministic, and professional "Pro-Tool" aesthetic for the SAJC 
 - **Modal Dynamics**: Add a subtle `scale-95` to `scale-100` entry animation for enrollment modals.
 - **Status Feedbacks**: Standardize toast notifications with a glass-blur background and Lucide icon pairings.
 
-##  Anti-Patterns
+## Anti-Patterns
 - No emojis as UI icons (Use Lucide SVG)
 - No decorative animations (Only feedback/loading)
 - No horizontal scrolling on main content

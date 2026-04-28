@@ -26,20 +26,6 @@ High-fidelity prototype for JC1 pilot (Term 2 2026) for Workgroup review. The ob
 | `Description`| String | Detailed info for the student |
 | `Level` | String | JC1, JC2, or both |
 
-### Student Portal Export (JSON Schema)
-```json
-{
-  "studentId": "string",
-  "records": [
-    {
-      "opportunityName": "string",
-      "completionDate": "string",
-      "status": "string"
-    }
-  ]
-}
-```
-
 ## 📝 Maintenance Log
 - **2026-04-24**: Initialized project under B.L.A.S.T. protocol.
 - **2026-04-24**: Updated North Star and added Google Sheets schema based on Pilot requirements.

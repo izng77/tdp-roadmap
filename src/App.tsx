@@ -15,7 +15,7 @@ function MainApp({ user }: { user: User }) {
     isAdminUser, isSuperAdminUser, showAdminPanel, setShowAdminPanel,
     users, activeTab, setActiveTab, toast,
     showNotification, handleToggleBookmark, handleSeedData, handleFileUpload,
-    handleCompleteCourse, handleAdd, handleDragEnd, handleRemoveItem,
+    handleCompleteCourse, handleAdd, handleDragEnd, handleRemoveItem, handleSyncCapacities,
     isTierLocked, getLockReason, getUnlockSuggestions,
     domainDistribution, filterOptions, chartData, topDomain,
   } = useRoadmapData(user);
@@ -56,6 +56,7 @@ function MainApp({ user }: { user: User }) {
         showNotification={showNotification}
         handleSeedData={handleSeedData}
         handleFileUpload={handleFileUpload}
+        handleSyncCapacities={handleSyncCapacities}
         domainDistribution={domainDistribution}
         focusMode={focusMode}
         setFocusMode={setFocusMode}

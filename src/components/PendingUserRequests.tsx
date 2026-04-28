@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { doc, getDoc, updateDoc, collection, onSnapshot, query, increment } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Opportunity } from '../types';
@@ -19,7 +19,7 @@ export function PendingUserRequests({ userDoc, catalog, showNotification, mockPe
       const proc: any[] = [];
       snapshot.forEach(d => {
         const data = d.data();
-        if (data.status === 'pending') { p.push({ id: d.id, ...data }); }
+        if (data.status === 'pending' || data.status === 'drop_pending') { p.push({ id: d.id, ...data }); }
         else if (data.status === 'planned' || data.status === 'rejected') { proc.push({ id: d.id, ...data }); }
       });
       setPending(p);
@@ -46,6 +46,23 @@ export function PendingUserRequests({ userDoc, catalog, showNotification, mockPe
       if (!isMock) { await updateDoc(doc(db, 'users', userDoc.id, 'courses', courseId), { status: 'rejected' }); }
       else if (onMockAction) { onMockAction(courseId, 'reject'); }
       showNotification(`Rejected request for ${userDoc.studentName}`, 'success');
+    } catch (e) { handleFirestoreError(e, OperationType.UPDATE, `users/${userDoc.id}/courses/${courseId}`); }
+  };
+
+  const handleApproveDrop = async (courseId: string, opportunityId: string) => {
+    try {
+      const isMock = userDoc.id.startsWith('mock_');
+      if (!isMock) {
+        // Delete the course record completely after drop is approved
+        const courseRef = doc(db, 'users', userDoc.id, 'courses', courseId);
+        await updateDoc(courseRef, { status: 'rejected' }); // Mark as rejected or delete? User said "approve drop" and "-1 capacity". 
+        // If we delete, it's cleaner. If we mark as rejected, we keep history. 
+        // Let's mark as rejected so it shows in processed tab.
+        
+        const oppRef = doc(db, 'opportunities', opportunityId);
+        await updateDoc(oppRef, { enrolled: increment(-1) });
+      } else if (onMockAction) { onMockAction(courseId, 'reject'); }
+      showNotification(`Drop approved for ${userDoc.studentName}`, 'success');
     } catch (e) { handleFirestoreError(e, OperationType.UPDATE, `users/${userDoc.id}/courses/${courseId}`); }
   };
 
@@ -92,7 +109,11 @@ export function PendingUserRequests({ userDoc, catalog, showNotification, mockPe
             <div className="flex flex-col gap-1">
               <span className="flex items-center gap-2">
                 {catalog.find(c => c.id === p.opportunityId)?.name || p.name || 'Unknown Course'}
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase tracking-wider border border-amber-200">Pending</span>
+                {p.status === 'drop_pending' ? (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 uppercase tracking-wider border border-red-200">Drop Requested</span>
+                ) : (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase tracking-wider border border-amber-200">Pending</span>
+                )}
               </span>
               {p.justification && (
                 <span className="text-xs text-slate-400 italic line-clamp-1" title={p.justification}>"{p.justification}"</span>
@@ -101,7 +122,11 @@ export function PendingUserRequests({ userDoc, catalog, showNotification, mockPe
           </td>
           <td className="py-4 px-4 text-right">
             <div className="flex gap-2 justify-end">
-              <button onClick={() => handleAccept(p.id, p.opportunityId)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition-all">Approve</button>
+              {p.status === 'drop_pending' ? (
+                <button onClick={() => handleApproveDrop(p.id, p.opportunityId)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition-all">Approve Drop</button>
+              ) : (
+                <button onClick={() => handleAccept(p.id, p.opportunityId)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition-all">Approve</button>
+              )}
               <button onClick={() => handleReject(p.id)} className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-3 py-1.5 rounded-full text-xs font-bold active:scale-95 transition-all">Reject</button>
             </div>
           </td>
