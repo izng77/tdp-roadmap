@@ -1,6 +1,7 @@
 import React from 'react';
 import { Star, ChevronRight, BookOpen } from 'lucide-react';
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { Chart as ChartJS, RadialLinearScale, ArcElement, Tooltip, Legend } from 'chart.js';
+import { PolarArea } from 'react-chartjs-2';
 import { cn, getTierName } from '../../utils';
 import { Opportunity, Profile } from '../../types';
 
@@ -19,6 +20,8 @@ interface DashboardTabProps {
     isProfileReady: boolean;
 }
 
+ChartJS.register(RadialLinearScale, ArcElement, Tooltip, Legend);
+
 export function DashboardTab({
     profile, activeTab, setActiveTab, focusMode,
     topDomain, chartData, filteredCatalog,
@@ -31,6 +34,44 @@ export function DashboardTab({
     // Mastery Points logic: Tier 1 = 10pts, Tier 2 = 30pts, Tier 3 = 60pts (1:3:6 ratio)
     const getPoints = (tier: number) => tier === 3 ? 60 : tier === 2 ? 30 : 10;
     const totalPoints = profile.completed.reduce((a, c) => a + getPoints(c.tier), 0);
+
+    // Chart.js Data Configuration
+    const polarData = {
+        labels: chartData.map(d => d.subject),
+        datasets: [{
+            label: 'Total Competency',
+            data: chartData.map(d => d.Total),
+            backgroundColor: 'rgba(1, 81, 177, 0.3)', // Using the brand secondary blue with opacity
+            borderColor: '#0151B1',
+            borderWidth: 2,
+        }],
+    };
+
+    // Chart.js Display Options
+    const polarOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            r: {
+                min: 0,
+                max: maxScore,
+                ticks: { display: false },
+                pointLabels: {
+                    display: true,
+                    centerPointLabels: true,
+                    font: {
+                        family: "'Fira Sans', sans-serif",
+                        size: 10,
+                        weight: 700 as const,
+                    },
+                    color: '#64748b', // text-slate-500
+                },
+            },
+        },
+        plugins: {
+            legend: { display: false },
+        },
+    };
 
     return (
         <div className={cn("flex-1 overflow-y-auto w-full px-4 md:px-0 py-8 md:py-12 no-scrollbar", activeTab === 0 ? "block" : "hidden")}>
@@ -96,15 +137,8 @@ export function DashboardTab({
                             </button>
                         </div>
                         <div className="flex-1 flex flex-col items-center justify-center w-full min-h-[300px]">
-                            <div className="w-full h-full relative z-10">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData} style={{ overflow: 'visible' }}>
-                                        <PolarGrid stroke="var(--color-outline-variant)" />
-                                        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fontFamily: 'Fira Sans', fontWeight: 700, fill: 'var(--color-on-surface-variant)', dy: 4 }} />
-                                        <PolarRadiusAxis angle={30} domain={[0, maxScore]} tick={false} axisLine={false} />
-                                        <Radar name="Total Competency" dataKey="Total" stroke="var(--color-secondary)" strokeWidth={3} activeDot={{ r: 6 }} dot={{ r: 4, fill: 'var(--color-secondary)', strokeWidth: 2, stroke: '#fff' }} fill="var(--color-secondary)" fillOpacity={0.2} />
-                                    </RadarChart>
-                                </ResponsiveContainer>
+                            <div className="w-full h-[300px] relative z-10">
+                                <PolarArea data={polarData} options={polarOptions} />
                             </div>
                         </div>
                         <div className="flex gap-3 justify-center mt-8 pt-6 border-t border-outline-variant/30">
