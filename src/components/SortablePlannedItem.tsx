@@ -39,7 +39,12 @@ export const SortablePlannedItem: React.FC<SortablePlannedItemProps> = ({ item, 
       {getIcon()}
 
       <div className="flex-1 min-w-0 pr-2">
-        <div className="font-display font-bold text-slate-900 text-base mb-1 truncate">{item.name}</div>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="font-display font-bold text-slate-900 text-base truncate">{item.name}</div>
+          {(item as any).status === 'completion_pending' && (
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 uppercase tracking-wider border border-blue-200 shrink-0">Verification Pending</span>
+          )}
+        </div>
         <div className="text-xs font-medium text-slate-500 flex items-center gap-2">
           <span className="flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Mon, Wed 10:00 AM</span>
           <span className="w-1 h-1 rounded-full bg-slate-300"></span>
@@ -55,13 +60,15 @@ export const SortablePlannedItem: React.FC<SortablePlannedItemProps> = ({ item, 
       </div>
 
       <div className="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={() => setConfirmCompleteItem(item)}
-          className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 flex items-center justify-center transition-colors"
-          title="Mark as completed"
-        >
-          <CheckCircle className="w-4 h-4" />
-        </button>
+        {(item as any).status !== 'completion_pending' && (
+          <button
+            onClick={() => setConfirmCompleteItem(item)}
+            className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 flex items-center justify-center transition-colors"
+            title="Request Completion"
+          >
+            <CheckCircle className="w-4 h-4" />
+          </button>
+        )}
         <button
           onClick={() => onRemove(item.id)}
           className="w-8 h-8 rounded-full bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors"
@@ -73,4 +80,3 @@ export const SortablePlannedItem: React.FC<SortablePlannedItemProps> = ({ item, 
     </div>
   );
 };
-

@@ -253,8 +253,8 @@ export function StudentDashboard({
                                 <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex flex-col items-center justify-center mb-6 mx-auto">
                                     <CheckCircle2 className="w-8 h-8" />
                                 </div>
-                                <h2 className="text-xl font-display font-bold text-slate-900 mb-2 text-center">Mark as Completed?</h2>
-                                <p className="text-slate-500 mb-8 text-center text-sm font-medium">Are you sure you want to mark <span className="font-bold text-slate-900">{confirmCompleteItem.name}</span> as completed? This will award you mastery points.</p>
+                                <h2 className="text-xl font-display font-bold text-slate-900 mb-2 text-center">Request Completion Verification?</h2>
+                                <p className="text-slate-500 mb-8 text-center text-sm font-medium">Are you sure you want to request completion for <span className="font-bold text-slate-900">{confirmCompleteItem.name}</span>? A teacher will review and verify this before awarding mastery points.</p>
 
                                 <div className="flex gap-3">
                                     <button
@@ -270,7 +270,7 @@ export function StudentDashboard({
                                         }}
                                         className="flex-1 py-3 rounded-full font-bold uppercase tracking-wider text-sm transition-all bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20"
                                     >
-                                        Confirm
+                                        Send Request
                                     </button>
                                 </div>
                             </div>

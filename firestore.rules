@@ -123,44 +123,52 @@ service cloud.firestore {
       // Student Course Tracking Subcollection
       match /courses/{courseId} {
         
-        function isValidCourse(data) {
-           let requiredKeys = data.keys().hasAll(['opportunityId', 'status', 'addedAt', 'name', 'tier', 'domain']);
+        function isValidCourse(data, userId) {
+           let requiredKeys = data.keys().hasAll(['opportunityId', 'status', 'addedAt', 'name', 'tier', 'domain', 'studentId', 'studentName']);
            let hasOrder = data.keys().hasAny(['order']);
            let hasJustification = data.keys().hasAny(['justification']);
            let hasCompletedAt = data.keys().hasAny(['completedAt']);
+           let hasRequestedCompletionAt = data.keys().hasAny(['requestedCompletionAt']);
            
            let optKeysValid = (!hasOrder || data.order is number) && 
                               (!hasJustification || data.justification is string) &&
-                              (!hasCompletedAt || data.completedAt is timestamp);
-           let expectedSize = 6 + (hasOrder ? 1 : 0) + (hasJustification ? 1 : 0) + (hasCompletedAt ? 1 : 0);
+                              (!hasCompletedAt || data.completedAt is timestamp) &&
+                              (!hasRequestedCompletionAt || data.requestedCompletionAt is timestamp);
+           let expectedSize = 8 + (hasOrder ? 1 : 0) + (hasJustification ? 1 : 0) + (hasCompletedAt ? 1 : 0) + (hasRequestedCompletionAt ? 1 : 0);
            
            return requiredKeys && optKeysValid && (data.size() == expectedSize) &&
                   data.opportunityId is string && data.opportunityId.size() <= 128 &&
-                  data.status in ['planned', 'completed', 'pending', 'rejected', 'drop_pending'] &&
+                  data.status in ['planned', 'completed', 'pending', 'rejected', 'drop_pending', 'completion_pending'] &&
                   data.addedAt == request.time &&
                   data.name is string && data.name.size() <= 200 && data.name.size() > 0 &&
                   data.tier is number &&
-                  data.domain is string && data.domain.size() <= 100 && data.domain.size() > 0;
+                  data.domain is string && data.domain.size() <= 100 && data.domain.size() > 0 &&
+                  data.studentId == userId &&
+                  data.studentName is string && data.studentName.size() > 0 && data.studentName.size() <= 100;
         }
         
-        function isValidCourseUpdate(data) {
-           let requiredKeys = data.keys().hasAll(['opportunityId', 'status', 'addedAt', 'name', 'tier', 'domain']);
+        function isValidCourseUpdate(data, userId) {
+           let requiredKeys = data.keys().hasAll(['opportunityId', 'status', 'addedAt', 'name', 'tier', 'domain', 'studentId', 'studentName']);
            let hasOrder = data.keys().hasAny(['order']);
            let hasJustification = data.keys().hasAny(['justification']);
            let hasCompletedAt = data.keys().hasAny(['completedAt']);
+           let hasRequestedCompletionAt = data.keys().hasAny(['requestedCompletionAt']);
            
            let optKeysValid = (!hasOrder || data.order is number) && 
                               (!hasJustification || data.justification is string) &&
-                              (!hasCompletedAt || data.completedAt is timestamp);
-           let expectedSize = 6 + (hasOrder ? 1 : 0) + (hasJustification ? 1 : 0) + (hasCompletedAt ? 1 : 0);
+                              (!hasCompletedAt || data.completedAt is timestamp) &&
+                              (!hasRequestedCompletionAt || data.requestedCompletionAt is timestamp);
+           let expectedSize = 8 + (hasOrder ? 1 : 0) + (hasJustification ? 1 : 0) + (hasCompletedAt ? 1 : 0) + (hasRequestedCompletionAt ? 1 : 0);
            
            return requiredKeys && optKeysValid && (data.size() == expectedSize) &&
                   data.opportunityId is string && data.opportunityId.size() <= 128 &&
-                  data.status in ['planned', 'completed', 'pending', 'rejected', 'drop_pending'] &&
+                  data.status in ['planned', 'completed', 'pending', 'rejected', 'drop_pending', 'completion_pending'] &&
                   data.addedAt == existing().addedAt &&
                   data.name is string && data.name.size() <= 200 && data.name.size() > 0 &&
                   data.tier is number &&
-                  data.domain is string && data.domain.size() <= 100 && data.domain.size() > 0;
+                  data.domain is string && data.domain.size() <= 100 && data.domain.size() > 0 &&
+                  data.studentId == userId &&
+                  data.studentName is string && data.studentName.size() > 0 && data.studentName.size() <= 100;
         }
 
         // Only owners or admins can see these
@@ -172,20 +180,23 @@ service cloud.firestore {
                       // Ensures they actually exist before attaching subresource:
                       exists(/databases/$(database)/documents/users/$(userId)) && 
                       exists(/databases/$(database)/documents/opportunities/$(incoming().opportunityId)) &&
-                      isValidCourse(incoming());
+                      isValidCourse(incoming(), userId);
                       
         // Action-Based Update constraint: limit what they can touch
         allow update: if (isOwner(userId) || isAdmin()) && isValidId(courseId) && 
-                      isValidCourseUpdate(incoming()) &&
+                      isValidCourseUpdate(incoming(), userId) &&
                       // Keep ID and timestamps locked
                       incoming().opportunityId == existing().opportunityId &&
                       // They can only safely update status or order (in cases where a teacher's course was renamed, the system/admin might push a sync. Using a broader hasOnly covers that, but only Admins should do full syncs)
                       (
                         isAdmin() ||
                         (
-                          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'order', 'completedAt']) &&
-                          // Strict Guardrail: Students cannot self-approve pending requests or bypass rejection
-                          (existing().status != 'pending' || incoming().status == 'pending') && (existing().status != 'rejected' || incoming().status == 'rejected')
+                          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'order', 'requestedCompletionAt']) &&
+                          // Strict Guardrail: Students cannot self-approve pending requests, bypass rejection, or self-verify completions
+                          (existing().status != 'pending' || incoming().status == 'pending') && 
+                          (existing().status != 'rejected' || incoming().status == 'rejected') &&
+                          (incoming().status != 'completed' || existing().status == 'completed') &&
+                          (incoming().status != 'planned' || (existing().status == 'planned' || existing().status == 'drop_pending' || existing().status == 'completion_pending'))
                         )
                       );
                       

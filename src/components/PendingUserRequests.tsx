@@ -1,5 +1,5 @@
 import React from 'react';
-import { doc, updateDoc, collectionGroup, onSnapshot, query, increment, where, orderBy } from 'firebase/firestore';
+import { doc, updateDoc, collectionGroup, onSnapshot, query, increment, where, orderBy, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Opportunity } from '../types';
 
@@ -9,7 +9,7 @@ export function PendingUserRequests({ catalog, showNotification }: { catalog: Op
   React.useEffect(() => {
     const q = query(
       collectionGroup(db, 'courses'),
-      where('status', 'in', ['pending', 'drop_pending']),
+      where('status', 'in', ['pending', 'drop_pending', 'completion_pending']),
       orderBy('addedAt', 'desc')
     );
 
@@ -29,30 +29,48 @@ export function PendingUserRequests({ catalog, showNotification }: { catalog: Op
 
   const handleAccept = async (course: any) => {
     try {
-      await updateDoc(doc(db, 'users', course.studentId, 'courses', course.id), { status: 'planned' });
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'users', course.studentId, 'courses', course.id), { status: 'planned' });
       const oppRef = doc(db, 'opportunities', course.opportunityId);
-      await updateDoc(oppRef, { enrolled: increment(1) });
+      batch.update(oppRef, { enrolled: increment(1) });
+      await batch.commit();
       showNotification(`Approved request for ${course.studentName}`, 'success');
     } catch (e) { handleFirestoreError(e, OperationType.UPDATE, `users/${course.studentId}/courses/${course.id}`); }
   };
 
   const handleReject = async (course: any) => {
     try {
-      await updateDoc(doc(db, 'users', course.studentId, 'courses', course.id), { status: 'rejected' });
-      showNotification(`Rejected request for ${course.studentName}`, 'success');
+      // If rejecting a drop or completion request, revert it back to 'planned'
+      const isReversion = course.status === 'drop_pending' || course.status === 'completion_pending';
+      const newStatus = isReversion ? 'planned' : 'rejected';
+
+      await updateDoc(doc(db, 'users', course.studentId, 'courses', course.id), { status: newStatus });
+      const actionStr = course.status === 'completion_pending' ? 'completion' : course.status === 'drop_pending' ? 'drop' : 'enrollment';
+      showNotification(`Rejected ${actionStr} request for ${course.studentName}`, 'success');
     } catch (e) { handleFirestoreError(e, OperationType.UPDATE, `users/${course.studentId}/courses/${course.id}`); }
   };
 
   const handleApproveDrop = async (course: any) => {
     try {
-      // Mark as rejected to keep history, and decrement capacity.
+      const batch = writeBatch(db);
       const courseRef = doc(db, 'users', course.studentId, 'courses', course.id);
-      await updateDoc(courseRef, { status: 'rejected' });
-
+      batch.update(courseRef, { status: 'rejected' });
       const oppRef = doc(db, 'opportunities', course.opportunityId);
-      await updateDoc(oppRef, { enrolled: increment(-1) });
-
+      batch.update(oppRef, { enrolled: increment(-1) });
+      await batch.commit();
       showNotification(`Drop approved for ${course.studentName}`, 'success');
+    } catch (e) { handleFirestoreError(e, OperationType.UPDATE, `users/${course.studentId}/courses/${course.id}`); }
+  };
+
+  const handleApproveCompletion = async (course: any) => {
+    try {
+      const courseRef = doc(db, 'users', course.studentId, 'courses', course.id);
+      // No capacity change needed for completions, just mark as completed and record timestamp.
+      await updateDoc(courseRef, {
+        status: 'completed',
+        completedAt: serverTimestamp()
+      });
+      showNotification(`Mastery verified for ${course.studentName}`, 'success');
     } catch (e) { handleFirestoreError(e, OperationType.UPDATE, `users/${course.studentId}/courses/${course.id}`); }
   };
 
@@ -84,8 +102,10 @@ export function PendingUserRequests({ catalog, showNotification }: { catalog: Op
                 {catalog.find(c => c.id === p.opportunityId)?.name || p.name || 'Unknown Course'}
                 {p.status === 'drop_pending' ? (
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 uppercase tracking-wider border border-red-200">Drop Requested</span>
+                ) : p.status === 'completion_pending' ? (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 uppercase tracking-wider border border-blue-200">Completion Requested</span>
                 ) : (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase tracking-wider border border-amber-200">Pending</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase tracking-wider border border-amber-200">Enrollment Pending</span>
                 )}
               </span>
               {p.justification && (
@@ -97,6 +117,8 @@ export function PendingUserRequests({ catalog, showNotification }: { catalog: Op
             <div className="flex gap-2 justify-end">
               {p.status === 'drop_pending' ? (
                 <button onClick={() => handleApproveDrop(p)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition-all">Approve Drop</button>
+              ) : p.status === 'completion_pending' ? (
+                <button onClick={() => handleApproveCompletion(p)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition-all">Verify Completion</button>
               ) : (
                 <button onClick={() => handleAccept(p)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition-all">Approve</button>
               )}

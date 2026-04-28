@@ -163,7 +163,8 @@ export function useRoadmapData(user: User | null) {
       return false;
     }
 
-    const status = (item.tier === 3 || item.isExternal) ? 'pending' : 'planned';
+    // All enrollments now require teacher approval
+    const status = 'pending';
     try {
       const dataToSet: any = {
         opportunityId: item.id,
@@ -177,16 +178,10 @@ export function useRoadmapData(user: User | null) {
         justification: justification || ""
       };
 
-      if (status === 'planned') {
-        // For new 'planned' items, add to the end of the list using fractional indexing.
-        const lastItem = profile.planned.length > 0 ? profile.planned[profile.planned.length - 1] : null;
-        const lastOrder = lastItem ? lastItem.order : 0;
-        dataToSet.order = (lastOrder || 0) + 1000;
-      } else {
-        // Pending items don't need a specific order for drag-and-drop.
-        // We assign 0 to satisfy the 'orderBy' query constraint.
-        dataToSet.order = 0;
-      }
+      // Pre-calculate order so it slots correctly into the schedule upon teacher approval
+      const lastItem = profile.planned.length > 0 ? profile.planned[profile.planned.length - 1] : null;
+      const lastOrder = lastItem ? lastItem.order : 0;
+      dataToSet.order = (lastOrder || 0) + 1000;
 
       const newCourseRef = doc(collection(db, 'users', user.uid, 'courses'));
       await setDoc(newCourseRef, dataToSet);
@@ -207,7 +202,7 @@ export function useRoadmapData(user: User | null) {
       const allCourses = [...profile.planned, ...profile.pending, ...profile.completed, ...profile.rejected];
       const item = allCourses.find(c => c.id === docId);
 
-      if (item && (item.status === 'planned' || item.status === 'completed')) {
+      if (item && (item.status === 'planned' || item.status === 'completed' || item.status === 'completion_pending')) {
         // If it was already approved/planned, we need admin to approve the drop to sync capacity
         await updateDoc(courseRef, { status: 'drop_pending' });
         showNotification("Drop request sent to admin for capacity syncing.");
@@ -227,10 +222,10 @@ export function useRoadmapData(user: User | null) {
     if (!user) return false;
     try {
       await setDoc(doc(db, 'users', user.uid, 'courses', item.id), {
-        status: 'completed',
-        completedAt: serverTimestamp()
+        status: 'completion_pending',
+        requestedCompletionAt: serverTimestamp()
       }, { merge: true });
-      showNotification(`Mastery achieved: ${item.name}!`);
+      showNotification(`Completion request sent for ${item.name}!`);
       return true;
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}/courses/${item.id}`);
@@ -410,7 +405,7 @@ export function useRoadmapData(user: User | null) {
       snapshot.forEach(d => {
         const data = d.data();
         const item = { id: d.id, ...data };
-        if (data.status === 'planned') planned.push(item);
+        if (data.status === 'planned' || data.status === 'completion_pending') planned.push(item);
         else if (data.status === 'pending' || data.status === 'drop_pending') pending.push(item);
         else if (data.status === 'completed') completed.push(item);
         else if (data.status === 'rejected') rejected.push(item);

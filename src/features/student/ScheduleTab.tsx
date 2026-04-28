@@ -31,7 +31,7 @@ export function ScheduleTab({
                     <div className="mb-8">
                         <h2 className="font-display font-bold text-xl text-slate-800 mb-4 flex items-center gap-2">
                             <Clock className="w-5 h-5 text-amber-500" />
-                            Pending Enrollment ({profile.pending.length})
+                            Pending Requests ({profile.pending.length})
                         </h2>
                         <div className="flex flex-col gap-4">
                             {profile.pending.map((item, idx) => (
