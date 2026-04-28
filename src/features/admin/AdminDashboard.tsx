@@ -315,13 +315,7 @@ export function AdminDashboard({
                     <div className={cn("flex flex-col animate-fadeIn", activeTab === 3 ? "flex" : "hidden")}>
                         <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-200">
                             <h2 className="font-headline-lg text-headline-lg font-display font-bold text-slate-900 mb-4">Enrollment Requests</h2>
-                            <div className="h-[500px] overflow-y-auto w-full custom-scrollbar">
-                                <table className="w-full text-left border-collapse">
-                                    <tbody>
-                                        <PendingUserRequests catalog={catalog} showNotification={showNotification} />
-                                    </tbody>
-                                </table>
-                            </div>
+                            <PendingUserRequests catalog={catalog} showNotification={showNotification} />
                         </div>
                     </div>
 

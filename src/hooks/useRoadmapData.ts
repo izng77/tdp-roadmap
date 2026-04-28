@@ -453,28 +453,36 @@ export function useRoadmapData(user: User | null) {
   // --- Analytics & Formatting ---
 
   const domainDistribution = useMemo(() => {
-    const dist: Record<string, number> = {};
+    const completedDist: Record<string, number> = {};
+    const plannedDist: Record<string, number> = {};
+    const totalDist: Record<string, number> = {};
     const displayNames: Record<string, string> = {};
+
+    const getWeight = (tier: number) => tier === 3 ? 6 : tier === 2 ? 3 : 1;
 
     profile.completed.forEach(c => {
       const domain = c.domain || "Uncategorized";
       const norm = domain.trim().toLowerCase();
       displayNames[norm] = domain;
-      dist[norm] = (dist[norm] || 0) + 1;
+      const w = getWeight(c.tier);
+      completedDist[norm] = (completedDist[norm] || 0) + w;
+      totalDist[norm] = (totalDist[norm] || 0) + w;
     });
     profile.planned.forEach(p => {
       const domain = p.domain || "Uncategorized";
       const norm = domain.trim().toLowerCase();
       displayNames[norm] = domain;
-      dist[norm] = (dist[norm] || 0) + 0.5;
+      const w = getWeight(p.tier) * 0.5;
+      plannedDist[norm] = (plannedDist[norm] || 0) + w;
+      totalDist[norm] = (totalDist[norm] || 0) + w;
     });
 
     // Map back to display names for UI
-    const entries = Object.entries(dist).map(([norm, val]) => [displayNames[norm] || norm, val] as [string, number]);
+    const entries = Object.entries(totalDist).map(([norm, val]) => [displayNames[norm] || norm, val] as [string, number]);
     const topDomains = entries.sort((a, b) => b[1] - a[1]).slice(0, 5);
     const max = Math.max(...entries.map(e => e[1]), 1);
 
-    return { dist, topDomains, max, displayNames };
+    return { completedDist, plannedDist, totalDist, topDomains, max, displayNames };
   }, [profile.completed, profile.planned]);
 
   const chartData = useMemo(() => {
@@ -487,14 +495,19 @@ export function useRoadmapData(user: User | null) {
 
     return Array.from(uniqueDomains.entries()).map(([norm, display]) => ({
       subject: display,
-      Completed: domainDistribution.dist[norm] || 0,
-      fullMark: 5
+      Completed: domainDistribution.completedDist[norm] || 0,
+      Planned: domainDistribution.plannedDist[norm] || 0,
+      Total: domainDistribution.totalDist[norm] || 0,
+      fullMark: domainDistribution.max
     }));
   }, [catalog, domainDistribution]);
 
   const topDomain = useMemo(() => {
-    return domainDistribution.topDomains.length > 0 ? domainDistribution.topDomains[0][0] : "Exploration";
-  }, [domainDistribution]);
+    if (chartData.length === 0) return null;
+    // Find the domain object with the highest overall score
+    const sorted = [...chartData].sort((a, b) => b.Total - a.Total);
+    return sorted[0].Total > 0 ? sorted[0] : null;
+  }, [chartData]);
 
   return {
     profile, setProfile, dbLoading, catalog, setCatalog,

@@ -25,6 +25,13 @@ export function DashboardTab({
     isTierLocked, setSelectedItem, handleEnrollClick,
     handleAdd, isProfileReady
 }: DashboardTabProps) {
+    // Evaluate the student's highest domain to define the radar's shape boundary
+    const maxScore = Math.max(1, ...chartData.map(d => d.Total || 0));
+
+    // Mastery Points logic: Tier 1 = 10pts, Tier 2 = 30pts, Tier 3 = 60pts (1:3:6 ratio)
+    const getPoints = (tier: number) => tier === 3 ? 60 : tier === 2 ? 30 : 10;
+    const totalPoints = profile.completed.reduce((a, c) => a + getPoints(c.tier), 0);
+
     return (
         <div className={cn("flex-1 overflow-y-auto w-full px-4 md:px-0 py-8 md:py-12 no-scrollbar", activeTab === 0 ? "block" : "hidden")}>
             <section className="bg-primary text-white rounded-xl p-8 md:px-12 md:py-10 mb-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-center z-10 shadow-2xl shadow-primary/20 border border-white/5">
@@ -94,20 +101,20 @@ export function DashboardTab({
                                     <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData} style={{ overflow: 'visible' }}>
                                         <PolarGrid stroke="var(--color-outline-variant)" />
                                         <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fontFamily: 'Fira Sans', fontWeight: 700, fill: 'var(--color-on-surface-variant)', dy: 4 }} />
-                                        <PolarRadiusAxis angle={30} domain={[0, 15]} tick={false} axisLine={false} />
-                                        <Radar name="Completed" dataKey="Completed" stroke="var(--color-secondary)" strokeWidth={3} activeDot={{ r: 6 }} dot={{ r: 4, fill: 'var(--color-secondary)', strokeWidth: 2, stroke: '#fff' }} fill="var(--color-secondary)" fillOpacity={0.2} />
+                                        <PolarRadiusAxis angle={30} domain={[0, maxScore]} tick={false} axisLine={false} />
+                                        <Radar name="Total Competency" dataKey="Total" stroke="var(--color-secondary)" strokeWidth={3} activeDot={{ r: 6 }} dot={{ r: 4, fill: 'var(--color-secondary)', strokeWidth: 2, stroke: '#fff' }} fill="var(--color-secondary)" fillOpacity={0.2} />
                                     </RadarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
                         <div className="flex gap-3 justify-center mt-8 pt-6 border-t border-outline-variant/30">
-                            {topDomain && (topDomain.Completed > 2 || topDomain.Planned > 4) ? (
+                            {topDomain && (topDomain.Completed > 2 || (topDomain.Planned || 0) > 4) ? (
                                 <>
                                     <span className="bg-secondary/10 text-secondary text-[10px] font-black px-4 py-2 rounded-lg border border-secondary/20 flex items-center shadow-sm uppercase tracking-widest">
                                         <Star className="w-3.5 h-3.5 mr-1.5 fill-secondary" /> {topDomain.subject}
                                     </span>
                                     <span className="bg-surface-dim text-on-surface-variant text-[10px] font-black px-4 py-2 rounded-lg border border-outline-variant uppercase tracking-widest">
-                                        {topDomain.Completed + topDomain.Planned - 6 > 0 ? (topDomain.Completed + topDomain.Planned - 6) * 10 : 0} Mastery Points
+                                        {topDomain.Completed + (topDomain.Planned || 0) - 6 > 0 ? (topDomain.Completed + (topDomain.Planned || 0) - 6) * 10 : 0} Mastery Points
                                     </span>
                                 </>
                             ) : (
@@ -124,7 +131,7 @@ export function DashboardTab({
                             <h2 className="font-display font-black text-xl text-primary tracking-tight">Mastery Progression</h2>
                             <span className="bg-success/10 text-success text-[10px] font-black px-4 py-2 rounded-lg border border-success/20 flex items-center gap-1.5 uppercase tracking-widest shadow-sm">
                                 <Star className="w-3.5 h-3.5 fill-success" />
-                                {profile.completed.reduce((a, c) => a + c.tier, 0) * 10} pts
+                                {totalPoints} pts
                             </span>
                         </div>
                         <p className="text-xs font-black text-on-surface-variant uppercase tracking-[0.2em] mb-10 opacity-60">Status: Advanced Tier</p>
@@ -135,9 +142,9 @@ export function DashboardTab({
                                 <span>Elite (3,000 pts)</span>
                             </div>
                             <div className="w-full h-2.5 bg-surface-dim rounded-full overflow-hidden border border-outline-variant/30 p-0.5">
-                                <div className="h-full bg-success rounded-full shadow-lg shadow-success/20 transition-all duration-1000" style={{ width: `${Math.min(100, Math.max(5, (profile.completed.reduce((a, c) => a + c.tier, 0) * 10) / 30))}%` }}></div>
+                                <div className="h-full bg-success rounded-full shadow-lg shadow-success/20 transition-all duration-1000" style={{ width: `${Math.min(100, Math.max(5, totalPoints / 30))}%` }}></div>
                             </div>
-                            <p className="text-[10px] font-bold text-outline mt-3 text-right tabular-nums">{3000 - (profile.completed.reduce((a, c) => a + c.tier, 0) * 10)} PTS TO ELITE</p>
+                            <p className="text-[10px] font-bold text-outline mt-3 text-right tabular-nums">{Math.max(0, 3000 - totalPoints)} PTS TO ELITE</p>
                         </div>
 
                         <div className="flex gap-4 mb-8">
@@ -147,7 +154,7 @@ export function DashboardTab({
                             </div>
                             <div className="bg-surface-dim p-5 flex-1 flex flex-col items-center justify-center rounded-xl border border-outline-variant/30">
                                 <span className="text-[10px] font-black text-outline tracking-widest mb-1.5 uppercase">Tier 2</span>
-                                <span className="text-2xl font-display font-black text-primary tabular-nums">{profile.completed.reduce((a, c) => a + (c.tier === 2 ? 20 : 0), 0) || 0}</span>
+                                <span className="text-2xl font-display font-black text-primary tabular-nums">{profile.completed.reduce((a, c) => a + (c.tier === 2 ? 30 : 0), 0) || 0}</span>
                             </div>
                         </div>
 
@@ -165,7 +172,7 @@ export function DashboardTab({
                                                 <p className="text-sm font-black text-primary truncate tracking-tight">{c.name}</p>
                                                 <p className="text-[10px] font-bold text-outline mt-1 uppercase tracking-wider">{c.domain}</p>
                                             </div>
-                                            <span className="shrink-0 text-success bg-success/10 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border border-success/20">+{c.tier * 10}</span>
+                                            <span className="shrink-0 text-success bg-success/10 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border border-success/20">+{getPoints(c.tier)}</span>
                                         </div>
                                     ))}
                                 </div>
