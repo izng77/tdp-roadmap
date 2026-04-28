@@ -29,13 +29,13 @@ export const SEED_COURSES: Opportunity[] = [
   },
   {
     "id": "TDPmof7653k",
-    "name": "TDP Learning Journey",
+    "name": "TD Learning Journey",
     "domain": "Cognitive & Academic",
     "tier": 3,
     "level": "JC1 & JC2",
     "term": "Term 1",
     "week": "5",
-    "description": "An immersive off-campus learning experience designed for TDP students to explore industry applications and higher education pathways.",
+    "description": "An immersive off-campus learning experience designed for TD students to explore industry applications and higher education pathways.",
     "image": "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=600&auto=format&fit=crop",
     "enrolled": 20,
     "capacity": 40
@@ -640,7 +640,7 @@ export const SEED_COURSES: Opportunity[] = [
   },
   {
     "id": "TUCmof7653m",
-    "name": "TDP University & Career Fair (T2W10)",
+    "name": "TD University & Career Fair (T2W10)",
     "domain": "Cognitive & Academic",
     "tier": 1,
     "level": "JC1 & JC2",
@@ -833,7 +833,7 @@ export const SEED_COURSES: Opportunity[] = [
   },
   {
     "id": "IcEmof7653n",
-    "name": "TDP Learning Journey",
+    "name": "TD Learning Journey",
     "domain": "Cognitive & Academic",
     "tier": 3,
     "level": "JC2",

@@ -1,4 +1,4 @@
-# TDP Roadmap Design System (MASTER)
+# TD Roadmap Design System (MASTER)
 
 ## 🎯 North Star
 High-density, deterministic, and professional "Pro-Tool" aesthetic for the SAJC JC1 Talent Development Pilot.

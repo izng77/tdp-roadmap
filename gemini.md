@@ -1,4 +1,4 @@
-# Project Constitution: TDP Roadmap
+# Project Constitution: TD Roadmap
 
 ## 🎯 North Star
 High-fidelity prototype for JC1 pilot (Term 2 2026) for Workgroup review. The objective is to demonstrate the deterministic logic and UX before scaling to the full 1,400 student cohort in 2027.

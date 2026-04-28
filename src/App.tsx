@@ -114,7 +114,7 @@ export default function App() {
             <Lock className="w-8 h-8 text-white opacity-80" />
           </div>
 
-          <h1 className="font-display font-black text-4xl text-white mb-4 tracking-tighter">SAJC TDP</h1>
+          <h1 className="font-display font-black text-4xl text-white mb-4 tracking-tighter">SAJC TD</h1>
           <p className="text-blue-100/60 mb-12 font-medium tracking-wide uppercase text-[10px] tracking-[0.4em]">Talent Development Roadmap</p>
 
           <button

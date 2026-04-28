@@ -1,5 +1,5 @@
 {
-  "name": "react-example",
+  "name": "td-roadmap",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -18,7 +18,6 @@
     "@tailwindcss/vite": "^4.1.14",
     "@types/papaparse": "^5.5.2",
     "@vitejs/plugin-react": "^5.0.4",
-    "chart.js": "^4.5.1",
     "clsx": "^2.1.1",
     "express": "^5.2.1",
     "firebase": "^12.12.1",
@@ -27,7 +26,6 @@
     "motion": "^12.23.24",
     "papaparse": "^5.5.3",
     "react": "^19.0.0",
-    "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.0.0",
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0",
@@ -52,13 +50,13 @@
   "main": "eslint.config.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/izng77/tdp-roadmap.git"
+    "url": "git+https://github.com/izng77/td-roadmap.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/izng77/tdp-roadmap/issues"
+    "url": "https://github.com/izng77/td-roadmap/issues"
   },
-  "homepage": "https://github.com/izng77/tdp-roadmap#readme"
+  "homepage": "https://github.com/izng77/td-roadmap#readme"
 }

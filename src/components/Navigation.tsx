@@ -53,7 +53,7 @@ export function TopNavBar({ profile, activeTab, setActiveTab, isAdminUser, showA
           <img src={profile.studentName === 'Test Student' ? "https://i.pravatar.cc/150?u=mock" : "https://i.pravatar.cc/150?u=a042581f4e29026704d"} className="w-full h-full object-cover" alt="User" />
         </div>
         <div className="font-display font-black text-xs text-primary tracking-widest uppercase">
-          SAJC TDP Roadmap
+          SAJC TD Roadmap
         </div>
         <div className="flex items-center gap-2">
           {isAdminUser && (
@@ -101,7 +101,7 @@ export function SideNavBar({ profile, activeTab, setActiveTab, isAdminUser, show
         </div>
         <div className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 px-2">
             <h1 className="text-2xl font-black text-primary tracking-tighter font-display leading-none">SAJC</h1>
-            <p className="text-[10px] text-outline font-bold tracking-[0.2em] uppercase mt-1.5">{showAdminPanel ? 'Teacher Console' : 'TDP Roadmap'}</p>
+            <p className="text-[10px] text-outline font-bold tracking-[0.2em] uppercase mt-1.5">{showAdminPanel ? 'Teacher Console' : 'TD Roadmap'}</p>
         </div>
       </button>
       <div className="flex-1 flex flex-col gap-2" role="menu">
