@@ -35,6 +35,7 @@ interface StudentDashboardProps {
     filterOptions: any;
     focusMode: boolean;
     setFocusMode: React.Dispatch<React.SetStateAction<boolean>>;
+    isProfileReady: boolean;
 }
 
 export function StudentDashboard({
@@ -45,7 +46,7 @@ export function StudentDashboard({
     handleDragEnd, handleRemoveItem, handleCompleteCourse,
     isTierLocked, getLockReason, getUnlockSuggestions,
     chartData, topDomain, filterOptions,
-    focusMode, setFocusMode
+    focusMode, setFocusMode, isProfileReady
 }: StudentDashboardProps) {
     // Local Student UI State
     const [enrollJustification, setEnrollJustification] = useState('');
@@ -95,8 +96,9 @@ export function StudentDashboard({
                 setSelectedItem(null);
                 setDirectEnrollId(null);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Enrollment Error:", err);
+            showNotification(`Failed to submit enrollment request: ${err.message}`, "err");
         } finally {
             setIsEnrolling(false);
         }
@@ -117,6 +119,7 @@ export function StudentDashboard({
                         focusMode={focusMode} topDomain={topDomain} chartData={chartData}
                         filteredCatalog={filteredCatalog} isTierLocked={isTierLocked} setSelectedItem={setSelectedItem}
                         handleEnrollClick={handleEnrollClick} handleAdd={handleAdd}
+                        isProfileReady={isProfileReady}
                     />
                     <CatalogTab
                         catalog={catalog} filteredCatalog={filteredCatalog} profile={profile}
@@ -226,15 +229,15 @@ export function StudentDashboard({
                                             }
                                             handleEnrollClick(selectedItem);
                                         }}
-                                        disabled={isEnrolling || isTierLocked(selectedItem) || profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id)}
+                                        disabled={!isProfileReady || isEnrolling || isTierLocked(selectedItem) || profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id)}
                                         className={cn(
                                             "flex-1 py-3 rounded-full font-bold uppercase tracking-wider text-sm transition-all shadow-md active:scale-95",
-                                            (isEnrolling || isTierLocked(selectedItem) || profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id))
+                                            (!isProfileReady || isEnrolling || isTierLocked(selectedItem) || profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id))
                                                 ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
                                                 : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20"
                                         )}
                                     >
-                                        {isEnrolling ? 'Submitting...' : isTierLocked(selectedItem) ? 'Locked Requirement' : profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) ? 'Already Enrolled' : profile.pending.some(p => p.id === selectedItem.id) ? 'Pending Approval' : 'Submit Enrollment Request'}
+                                        {!isProfileReady ? 'Syncing Profile...' : isEnrolling ? 'Submitting...' : isTierLocked(selectedItem) ? 'Locked Requirement' : profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) ? 'Already Enrolled' : profile.pending.some(p => p.id === selectedItem.id) ? 'Pending Approval' : 'Submit Enrollment Request'}
                                     </button>
                                 </div>
                             </div>

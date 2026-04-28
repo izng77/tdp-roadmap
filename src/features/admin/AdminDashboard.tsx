@@ -25,7 +25,7 @@ interface AdminDashboardProps {
     showNotification: (msg: string, type?: 'success' | 'err') => void;
     handleSeedData: () => Promise<void>;
     handleFileUpload: (e: any) => Promise<void>;
-    handleSyncCapacities: () => Promise<void>;
+    handleSyncCapacities: () => Promise<boolean | void>;
     domainDistribution: any;
     focusMode: boolean;
     setFocusMode: React.Dispatch<React.SetStateAction<boolean>>;

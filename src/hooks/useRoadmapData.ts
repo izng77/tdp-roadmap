@@ -14,7 +14,8 @@ import {
   updateDoc,
   increment,
   collectionGroup,
-  getDocs
+  getDocs,
+  getDoc
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Opportunity, Profile } from '../types';
@@ -34,6 +35,7 @@ export function useRoadmapData(user: User | null) {
   const [dbLoading, setDbLoading] = useState(true);
   const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [isProfileReady, setIsProfileReady] = useState(false);
   const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState(0);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -58,6 +60,44 @@ export function useRoadmapData(user: User | null) {
     }).catch(() => {
       // Errors handled silently to comply with production logging standards
     });
+  }, [user]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncUserProfile = async () => {
+      if (!user || user.uid.startsWith('mock_')) {
+        if (isMounted) setIsProfileReady(!!user?.uid.startsWith('mock_'));
+        return;
+      }
+
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+          const fallbackName = user.email ? user.email.split('@')[0] : 'Student';
+          const studentName = user.displayName && user.displayName.trim().length > 0
+            ? user.displayName
+            : fallbackName;
+
+          await setDoc(userRef, {
+            email: user.email || '',
+            studentName: studentName.substring(0, 100) // enforce max length from firestore rules
+          });
+        }
+
+        if (isMounted) setIsProfileReady(true);
+      } catch (error) {
+        console.error("Failed to sync user profile:", error);
+      }
+    };
+
+    syncUserProfile();
+
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   const showNotification = (msg: string, type: 'success' | 'err' = 'success') => {
@@ -104,6 +144,11 @@ export function useRoadmapData(user: User | null) {
 
   const handleAdd = async (item: Opportunity, justification?: string) => {
     if (!user) return false;
+
+    if (!isProfileReady && !user.uid.startsWith('mock_')) {
+      showNotification("Your profile is still syncing. Please wait a moment.", "err");
+      return false;
+    }
 
     // Idempotency: Prevent adding duplicates
     const allUserCourses = [...profile.planned, ...profile.pending, ...profile.completed, ...profile.rejected];
@@ -462,6 +507,7 @@ export function useRoadmapData(user: User | null) {
     handleCompleteCourse, handleAdd, handleDragEnd, handleRemoveItem, handleSyncCapacities,
     isTierLocked, getLockReason, getUnlockSuggestions,
     domainDistribution, chartData, topDomain,
+    isProfileReady,
     filterOptions: { domains: Array.from(new Set(catalog.map(o => o.domain))).sort() }
   };
 }

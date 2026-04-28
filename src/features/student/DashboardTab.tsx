@@ -16,13 +16,14 @@ interface DashboardTabProps {
     setSelectedItem: (item: Opportunity) => void;
     handleEnrollClick: (item: Opportunity) => void;
     handleAdd: (item: Opportunity, justification?: string) => Promise<boolean>;
+    isProfileReady: boolean;
 }
 
 export function DashboardTab({
     profile, activeTab, setActiveTab, focusMode,
     topDomain, chartData, filteredCatalog,
     isTierLocked, setSelectedItem, handleEnrollClick,
-    handleAdd
+    handleAdd, isProfileReady
 }: DashboardTabProps) {
     return (
         <div className={cn("flex-1 overflow-y-auto w-full px-4 md:px-0 py-8 md:py-12 no-scrollbar", activeTab === 0 ? "block" : "hidden")}>
@@ -203,13 +204,14 @@ export function DashboardTab({
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                if (!isLocked && !profile.planned.some(p => p.id === item.id) && !profile.pending.some(p => p.id === item.id)) {
+                                                if (isProfileReady && !isLocked && !profile.planned.some(p => p.id === item.id) && !profile.pending.some(p => p.id === item.id)) {
                                                     // Tier 1 & 2 items can be added directly without justification
                                                     item.tier < 3 ? handleAdd(item) : handleEnrollClick(item);
                                                 }
                                             }}
-                                            className={cn("w-full py-3 rounded-full text-xs font-bold uppercase tracking-wider transition-colors", isLocked ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-[#0151B1] text-white hover:bg-blue-700 shadow-md shadow-blue-500/20", profile.planned.some(p => p.id === item.id) ? "bg-emerald-50 text-emerald-600 shadow-none" : profile.pending.some(p => p.id === item.id) ? "bg-amber-50 text-amber-600 shadow-none" : "")}>
-                                            {isLocked ? 'Locked' : profile.planned.some(p => p.id === item.id) ? 'Enrolled' : profile.pending.some(p => p.id === item.id) ? 'Pending' : 'Quick Enroll'}
+                                            disabled={!isProfileReady}
+                                            className={cn("w-full py-3 rounded-full text-xs font-bold uppercase tracking-wider transition-colors", !isProfileReady || isLocked ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-[#0151B1] text-white hover:bg-blue-700 shadow-md shadow-blue-500/20", profile.planned.some(p => p.id === item.id) ? "bg-emerald-50 text-emerald-600 shadow-none" : profile.pending.some(p => p.id === item.id) ? "bg-amber-50 text-amber-600 shadow-none" : "")}>
+                                            {!isProfileReady ? 'Syncing...' : isLocked ? 'Locked' : profile.planned.some(p => p.id === item.id) ? 'Enrolled' : profile.pending.some(p => p.id === item.id) ? 'Pending' : 'Quick Enroll'}
                                         </button>
                                     </div>
                                 </div>

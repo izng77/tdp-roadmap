@@ -14,6 +14,10 @@ export type Opportunity = {
   courseId?: string;
   isUnlisted?: boolean;
   ownerEmails?: string[];
+  opportunityId?: string;
+  order?: number;
+  isExternal?: boolean;
+  status?: string;
 };
 
 export type Profile = {
