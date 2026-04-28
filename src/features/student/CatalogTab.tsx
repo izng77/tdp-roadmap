@@ -113,7 +113,7 @@ export function CatalogTab({
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                 {filteredCatalog.map(item => {
                     const locked = isTierLocked(item);
-                    const added = profile.planned.some(p => p.id === item.id) || profile.completed.some(c => c.id === item.id);
+                    const added = profile.planned.some(p => p.opportunityId === item.id) || profile.completed.some(c => c.opportunityId === item.id);
                     const isBookmarked = profile.bookmarks.some(b => b.id === item.id);
                     return (
                         <div key={item.id} onClick={() => setSelectedItem(item)} className="pro-card bg-white flex flex-col group cursor-pointer border border-outline-variant/30 hover:border-secondary/40 transition-all duration-500">
@@ -163,7 +163,7 @@ export function CatalogTab({
                                         <button className="w-full bg-surface-dim text-outline/40 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-outline-variant cursor-not-allowed">Locked Access</button>
                                     ) : added ? (
                                         <button className="w-full bg-success/5 text-success py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-success/20 cursor-default">Registered</button>
-                                    ) : profile.pending.some(p => p.id === item.id) ? (
+                                    ) : profile.pending.some(p => p.opportunityId === item.id) ? (
                                         <button className="w-full bg-secondary/5 text-secondary py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-secondary/20 cursor-default">Waitlist Pending</button>
                                     ) : (
                                         <button onClick={(e) => { e.stopPropagation(); handleEnrollClick(item); }} className="w-full bg-primary text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 transition-all active:scale-95 hover:bg-primary/90">Enroll Now</button>

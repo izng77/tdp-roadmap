@@ -318,9 +318,7 @@ export function AdminDashboard({
                             <div className="h-[500px] overflow-y-auto w-full custom-scrollbar">
                                 <table className="w-full text-left border-collapse">
                                     <tbody>
-                                        {users.map(u => (
-                                            <PendingUserRequests key={u.id} userDoc={u} catalog={catalog} showNotification={showNotification} mockPending={u.id === user.uid && user.uid.startsWith('mock_') ? profile.pending : undefined} />
-                                        ))}
+                                        <PendingUserRequests catalog={catalog} showNotification={showNotification} />
                                     </tbody>
                                 </table>
                             </div>

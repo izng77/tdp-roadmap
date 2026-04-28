@@ -167,6 +167,8 @@ export function useRoadmapData(user: User | null) {
     try {
       const dataToSet: any = {
         opportunityId: item.id,
+        studentId: user.uid,
+        studentName: profile.studentName,
         status,
         addedAt: serverTimestamp(),
         name: item.name,

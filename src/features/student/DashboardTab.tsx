@@ -204,14 +204,14 @@ export function DashboardTab({
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                if (isProfileReady && !isLocked && !profile.planned.some(p => p.id === item.id) && !profile.pending.some(p => p.id === item.id)) {
+                                                if (isProfileReady && !isLocked && !profile.planned.some(p => p.opportunityId === item.id) && !profile.pending.some(p => p.opportunityId === item.id)) {
                                                     // Tier 1 & 2 items can be added directly without justification
                                                     item.tier < 3 ? handleAdd(item) : handleEnrollClick(item);
                                                 }
                                             }}
-                                            disabled={!isProfileReady}
-                                            className={cn("w-full py-3 rounded-full text-xs font-bold uppercase tracking-wider transition-colors", !isProfileReady || isLocked ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-[#0151B1] text-white hover:bg-blue-700 shadow-md shadow-blue-500/20", profile.planned.some(p => p.id === item.id) ? "bg-emerald-50 text-emerald-600 shadow-none" : profile.pending.some(p => p.id === item.id) ? "bg-amber-50 text-amber-600 shadow-none" : "")}>
-                                            {!isProfileReady ? 'Syncing...' : isLocked ? 'Locked' : profile.planned.some(p => p.id === item.id) ? 'Enrolled' : profile.pending.some(p => p.id === item.id) ? 'Pending' : 'Quick Enroll'}
+                                            disabled={!isProfileReady || isLocked || profile.planned.some(p => p.opportunityId === item.id) || profile.pending.some(p => p.opportunityId === item.id)}
+                                            className={cn("w-full py-3 rounded-full text-xs font-bold uppercase tracking-wider transition-colors", !isProfileReady || isLocked || profile.planned.some(p => p.opportunityId === item.id) || profile.pending.some(p => p.opportunityId === item.id) ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-[#0151B1] text-white hover:bg-blue-700 shadow-md shadow-blue-500/20", profile.planned.some(p => p.opportunityId === item.id) ? "bg-emerald-50 text-emerald-600 shadow-none" : profile.pending.some(p => p.opportunityId === item.id) ? "bg-amber-50 text-amber-600 shadow-none" : "")}>
+                                            {!isProfileReady ? 'Syncing...' : isLocked ? 'Locked' : profile.planned.some(p => p.opportunityId === item.id) ? 'Enrolled' : profile.pending.some(p => p.opportunityId === item.id) ? 'Pending' : 'Quick Enroll'}
                                         </button>
                                     </div>
                                 </div>

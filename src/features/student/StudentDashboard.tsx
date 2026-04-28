@@ -203,7 +203,7 @@ export function StudentDashboard({
                                     </div>
                                 </div>
 
-                                {!(isTierLocked(selectedItem) || profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id)) && (
+                                {!(isTierLocked(selectedItem) || profile.planned.some(p => p.opportunityId === selectedItem.id) || profile.completed.some(c => c.opportunityId === selectedItem.id) || profile.pending.some(p => p.opportunityId === selectedItem.id)) && (
                                     <div className="mb-6 animate-fadeIn">
                                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Statement of Interest</label>
                                         <textarea
@@ -222,22 +222,22 @@ export function StudentDashboard({
                                 <div className="flex gap-3">
                                     <button
                                         onClick={() => {
-                                            const alreadyEnrolled = profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id);
+                                            const alreadyEnrolled = profile.planned.some(p => p.opportunityId === selectedItem.id) || profile.completed.some(c => c.opportunityId === selectedItem.id) || profile.pending.some(p => p.opportunityId === selectedItem.id);
                                             if (!enrollJustification && !isTierLocked(selectedItem) && !alreadyEnrolled) {
                                                 showNotification("Please provide a statement of interest.", "err");
                                                 return;
                                             }
                                             handleEnrollClick(selectedItem);
                                         }}
-                                        disabled={!isProfileReady || isEnrolling || isTierLocked(selectedItem) || profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id)}
+                                        disabled={!isProfileReady || isEnrolling || isTierLocked(selectedItem) || profile.planned.some(p => p.opportunityId === selectedItem.id) || profile.completed.some(c => c.opportunityId === selectedItem.id) || profile.pending.some(p => p.opportunityId === selectedItem.id)}
                                         className={cn(
                                             "flex-1 py-3 rounded-full font-bold uppercase tracking-wider text-sm transition-all shadow-md active:scale-95",
-                                            (!isProfileReady || isEnrolling || isTierLocked(selectedItem) || profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) || profile.pending.some(p => p.id === selectedItem.id))
+                                            (!isProfileReady || isEnrolling || isTierLocked(selectedItem) || profile.planned.some(p => p.opportunityId === selectedItem.id) || profile.completed.some(c => c.opportunityId === selectedItem.id) || profile.pending.some(p => p.opportunityId === selectedItem.id))
                                                 ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
                                                 : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20"
                                         )}
                                     >
-                                        {!isProfileReady ? 'Syncing Profile...' : isEnrolling ? 'Submitting...' : isTierLocked(selectedItem) ? 'Locked Requirement' : profile.planned.some(p => p.id === selectedItem.id) || profile.completed.some(c => c.id === selectedItem.id) ? 'Already Enrolled' : profile.pending.some(p => p.id === selectedItem.id) ? 'Pending Approval' : 'Submit Enrollment Request'}
+                                        {!isProfileReady ? 'Syncing Profile...' : isEnrolling ? 'Submitting...' : isTierLocked(selectedItem) ? 'Locked Requirement' : profile.planned.some(p => p.opportunityId === selectedItem.id) || profile.completed.some(c => c.opportunityId === selectedItem.id) ? 'Already Enrolled' : profile.pending.some(p => p.opportunityId === selectedItem.id) ? 'Pending Approval' : 'Submit Enrollment Request'}
                                     </button>
                                 </div>
                             </div>

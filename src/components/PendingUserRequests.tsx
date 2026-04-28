@@ -1,108 +1,81 @@
 import React from 'react';
-import { doc, getDoc, updateDoc, collection, onSnapshot, query, increment } from 'firebase/firestore';
+import { doc, updateDoc, collectionGroup, onSnapshot, query, increment, where, orderBy } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Opportunity } from '../types';
 
-export function PendingUserRequests({ userDoc, catalog, showNotification, mockPending, mockProcessed, onMockAction }: { userDoc: any, catalog: Opportunity[], showNotification: any, mockPending?: any[], mockProcessed?: any[], onMockAction?: (courseId: string, action: 'approve' | 'reject' | 'undo') => void }) {
-  const [pending, setPending] = React.useState<any[]>([]);
-  const [processed, setProcessed] = React.useState<any[]>([]);
+export function PendingUserRequests({ catalog, showNotification }: { catalog: Opportunity[], showNotification: any }) {
+  const [pendingRequests, setPendingRequests] = React.useState<any[]>([]);
 
   React.useEffect(() => {
-    if (userDoc.id.startsWith('mock_')) {
-      if (mockPending) setPending(mockPending);
-      if (mockProcessed) setProcessed(mockProcessed);
-      return;
-    }
-    const q = query(collection(db, 'users', userDoc.id, 'courses'));
+    const q = query(
+      collectionGroup(db, 'courses'),
+      where('status', 'in', ['pending', 'drop_pending']),
+      orderBy('addedAt', 'desc')
+    );
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const p: any[] = [];
-      const proc: any[] = [];
-      snapshot.forEach(d => {
-        const data = d.data();
-        if (data.status === 'pending' || data.status === 'drop_pending') { p.push({ id: d.id, ...data }); }
-        else if (data.status === 'planned' || data.status === 'rejected') { proc.push({ id: d.id, ...data }); }
-      });
-      setPending(p);
-      setProcessed(proc);
-    }, () => { console.warn("Requests sync failed for user", userDoc.id); });
+      const requests = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setPendingRequests(requests);
+    }, (error) => {
+      console.error("Collection group listener failed:", error);
+      showNotification("Failed to load pending requests.", "err");
+    });
+
     return () => unsubscribe();
-  }, [userDoc.id, mockPending, mockProcessed]);
+  }, []);
 
-  const handleAccept = async (courseId: string, opportunityId: string) => {
+  const handleAccept = async (course: any) => {
     try {
-      const isMock = userDoc.id.startsWith('mock_');
-      if (!isMock) {
-        await updateDoc(doc(db, 'users', userDoc.id, 'courses', courseId), { status: 'planned' });
-        const oppRef = doc(db, 'opportunities', opportunityId);
-        await updateDoc(oppRef, { enrolled: increment(1) });
-      } else if (onMockAction) { onMockAction(courseId, 'approve'); }
-      showNotification(`Approved request for ${userDoc.studentName}`, 'success');
-    } catch (e) { handleFirestoreError(e, OperationType.UPDATE, `users/${userDoc.id}/courses/${courseId}`); }
+      await updateDoc(doc(db, 'users', course.studentId, 'courses', course.id), { status: 'planned' });
+      const oppRef = doc(db, 'opportunities', course.opportunityId);
+      await updateDoc(oppRef, { enrolled: increment(1) });
+      showNotification(`Approved request for ${course.studentName}`, 'success');
+    } catch (e) { handleFirestoreError(e, OperationType.UPDATE, `users/${course.studentId}/courses/${course.id}`); }
   };
 
-  const handleReject = async (courseId: string) => {
+  const handleReject = async (course: any) => {
     try {
-      const isMock = userDoc.id.startsWith('mock_');
-      if (!isMock) { await updateDoc(doc(db, 'users', userDoc.id, 'courses', courseId), { status: 'rejected' }); }
-      else if (onMockAction) { onMockAction(courseId, 'reject'); }
-      showNotification(`Rejected request for ${userDoc.studentName}`, 'success');
-    } catch (e) { handleFirestoreError(e, OperationType.UPDATE, `users/${userDoc.id}/courses/${courseId}`); }
+      await updateDoc(doc(db, 'users', course.studentId, 'courses', course.id), { status: 'rejected' });
+      showNotification(`Rejected request for ${course.studentName}`, 'success');
+    } catch (e) { handleFirestoreError(e, OperationType.UPDATE, `users/${course.studentId}/courses/${course.id}`); }
   };
 
-  const handleApproveDrop = async (courseId: string, opportunityId: string) => {
+  const handleApproveDrop = async (course: any) => {
     try {
-      const isMock = userDoc.id.startsWith('mock_');
-      if (!isMock) {
-        // Delete the course record completely after drop is approved
-        const courseRef = doc(db, 'users', userDoc.id, 'courses', courseId);
-        await updateDoc(courseRef, { status: 'rejected' }); // Mark as rejected or delete? User said "approve drop" and "-1 capacity". 
-        // If we delete, it's cleaner. If we mark as rejected, we keep history. 
-        // Let's mark as rejected so it shows in processed tab.
-        
-        const oppRef = doc(db, 'opportunities', opportunityId);
-        await updateDoc(oppRef, { enrolled: increment(-1) });
-      } else if (onMockAction) { onMockAction(courseId, 'reject'); }
-      showNotification(`Drop approved for ${userDoc.studentName}`, 'success');
-    } catch (e) { handleFirestoreError(e, OperationType.UPDATE, `users/${userDoc.id}/courses/${courseId}`); }
+      // Mark as rejected to keep history, and decrement capacity.
+      const courseRef = doc(db, 'users', course.studentId, 'courses', course.id);
+      await updateDoc(courseRef, { status: 'rejected' });
+
+      const oppRef = doc(db, 'opportunities', course.opportunityId);
+      await updateDoc(oppRef, { enrolled: increment(-1) });
+
+      showNotification(`Drop approved for ${course.studentName}`, 'success');
+    } catch (e) { handleFirestoreError(e, OperationType.UPDATE, `users/${course.studentId}/courses/${course.id}`); }
   };
 
-  const handleUndo = async (courseId: string, opportunityId: string, currentStatus: string) => {
-    try {
-      const isMock = userDoc.id.startsWith('mock_');
-      if (!isMock) {
-        await updateDoc(doc(db, 'users', userDoc.id, 'courses', courseId), { status: 'pending' });
-        if (currentStatus === 'planned') {
-          const oppRef = doc(db, 'opportunities', opportunityId);
-          // Using increment(-1) is atomic. The DB validation or UI logic handles floor constraints.
-          await updateDoc(oppRef, { enrolled: increment(-1) });
-        }
-      } else if (onMockAction) { onMockAction(courseId, 'undo'); }
-      showNotification(`Action undone for ${userDoc.studentName}`, 'success');
-    } catch (e) { handleFirestoreError(e, OperationType.UPDATE, `users/${userDoc.id}/courses/${courseId}`); }
-  };
-
-  if (pending.length === 0 && processed.length === 0) return null;
+  if (pendingRequests.length === 0) {
+    return (
+      <tr>
+        <td colSpan={3} className="py-8 text-center text-slate-400 font-medium">
+          No pending requests.
+        </td>
+      </tr>
+    );
+  }
 
   return (
     <>
-      {pending.map(p => (
+      {pendingRequests.map(p => (
         <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
           <td className="py-4 px-4 font-bold text-slate-900 flex items-center gap-3">
             <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">
-              {(userDoc.studentName || 'S').substring(0, 2).toUpperCase()}
+              {(p.studentName || 'S').substring(0, 2).toUpperCase()}
             </div>
             <div className="flex flex-col">
-              <span>{userDoc.studentName || 'Unknown Student'}</span>
-              <div className="flex gap-2 mt-1">
-                <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold uppercase">
-                  {(userDoc.totalTierPoints || 0)} Pts
-                </span>
-                {userDoc.domainExp?.[catalog.find(c => c.id === p.opportunityId)?.domain || ''] && (
-                  <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-bold uppercase">
-                    {userDoc.domainExp[catalog.find(c => c.id === p.opportunityId)?.domain || '']} Done in Domain
-                  </span>
-                )}
-              </div>
+              <span>{p.studentName || 'Unknown Student'}</span>
             </div>
           </td>
           <td className="py-4 px-4 text-slate-600 font-medium">
@@ -123,41 +96,11 @@ export function PendingUserRequests({ userDoc, catalog, showNotification, mockPe
           <td className="py-4 px-4 text-right">
             <div className="flex gap-2 justify-end">
               {p.status === 'drop_pending' ? (
-                <button onClick={() => handleApproveDrop(p.id, p.opportunityId)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition-all">Approve Drop</button>
+                <button onClick={() => handleApproveDrop(p)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition-all">Approve Drop</button>
               ) : (
-                <button onClick={() => handleAccept(p.id, p.opportunityId)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition-all">Approve</button>
+                <button onClick={() => handleAccept(p)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition-all">Approve</button>
               )}
-              <button onClick={() => handleReject(p.id)} className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-3 py-1.5 rounded-full text-xs font-bold active:scale-95 transition-all">Reject</button>
-            </div>
-          </td>
-        </tr>
-      ))}
-
-      {processed.map(p => (
-        <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors opacity-75">
-          <td className="py-4 px-4 font-bold text-slate-900 flex items-center gap-3">
-            <div className="w-8 h-8 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center text-xs">
-              {(userDoc.studentName || 'S').substring(0, 2).toUpperCase()}
-            </div>
-            <div className="flex flex-col">
-              <span className="text-slate-500">{userDoc.studentName || 'Unknown Student'}</span>
-            </div>
-          </td>
-          <td className="py-4 px-4 text-slate-500 font-medium">
-            <div className="flex flex-col gap-1">
-              <span className="flex items-center gap-2">
-                {catalog.find(c => c.id === p.opportunityId)?.name || p.name || 'Unknown Course'}
-                {p.status === 'planned' ? (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 uppercase tracking-wider border border-emerald-200">Approved</span>
-                ) : (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 uppercase tracking-wider border border-red-200">Rejected</span>
-                )}
-              </span>
-            </div>
-          </td>
-          <td className="py-4 px-4 text-right">
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => handleUndo(p.id, p.opportunityId, p.status)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-full text-xs font-bold active:scale-95 transition-all">Undo</button>
+              <button onClick={() => handleReject(p)} className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-3 py-1.5 rounded-full text-xs font-bold active:scale-95 transition-all">Reject</button>
             </div>
           </td>
         </tr>
